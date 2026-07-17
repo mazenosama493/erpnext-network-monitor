@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-17 17:36:36.661503",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "device_information_section",
+  "device",
+  "device_type",
+  "alert_time",
+  "alert_section",
+  "alert_type",
+  "severity",
+  "notification_section",
+  "notification_sent",
+  "notification_time",
+  "notification_method"
+ ],
+ "fields": [
+  {
+   "fieldname": "device_information_section",
+   "fieldtype": "Section Break",
+   "label": "Device Information"
+  },
+  {
+   "fieldname": "device",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Device",
+   "options": "Network Device",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "device_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Device Type",
+   "options": "Network Device Type",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "alert_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Alert Time",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "alert_section",
+   "fieldtype": "Section Break",
+   "label": "Alert"
+  },
+  {
+   "fieldname": "alert_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Alert Type",
+   "options": "Device Down\nDevice Up\nHigh Latency\nPacket Loss\nCustom",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "label": "Severity",
+   "options": "Info\nWarning\nCritical",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "notification_section",
+   "fieldtype": "Section Break",
+   "label": "Notification"
+  },
+  {
+   "default": "0",
+   "fieldname": "notification_sent",
+   "fieldtype": "Check",
+   "label": "Notification Sent",
+   "options": "notification_sent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notification_time",
+   "fieldtype": "Datetime",
+   "label": "Notification Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notification_method",
+   "fieldtype": "Select",
+   "label": "Notification Method",
+   "options": "Email\nSlack\nWebhook\nNone",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-17 17:49:54.964947",
+ "modified_by": "Administrator",
+ "module": "Network",
+ "name": "Network Alert",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

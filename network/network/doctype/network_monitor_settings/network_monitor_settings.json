@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_rename": 1,
  "creation": "2026-07-16 21:24:36.023867",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -15,6 +14,7 @@
   "section_break_z0jg",
   "log_level",
   "keep_logs_days",
+  "check_logging_mode",
   "notifications_section",
   "enable_notifications",
   "notification_cooldown"
@@ -30,30 +30,39 @@
    "default": "30\n",
    "fieldname": "monitoring_interval_seconds",
    "fieldtype": "Int",
-   "label": "Monitoring Interval (Seconds)"
+   "in_list_view": 1,
+   "label": "Monitoring Interval (Seconds)",
+   "reqd": 1
   },
   {
    "default": "1",
    "fieldname": "ping_timeout",
    "fieldtype": "Float",
-   "label": "Ping Timeout (Seconds)"
+   "in_list_view": 1,
+   "label": "Ping Timeout (Seconds)",
+   "reqd": 1
   },
   {
    "default": "20\n",
    "fieldname": "max_workers",
    "fieldtype": "Int",
-   "label": "Max Workers"
+   "in_list_view": 1,
+   "label": "Max Workers",
+   "reqd": 1
   },
   {
    "fieldname": "retry_count",
    "fieldtype": "Int",
-   "label": "Retry Count"
+   "in_list_view": 1,
+   "label": "Retry Count",
+   "reqd": 1
   },
   {
    "default": "1",
    "fieldname": "retry_delay",
    "fieldtype": "Float",
-   "label": "Retry Delay (Seconds)"
+   "label": "Retry Delay (Seconds)",
+   "reqd": 1
   },
   {
    "fieldname": "section_break_z0jg",
@@ -91,16 +100,24 @@
   },
   {
    "default": "10",
+   "depends_on": "eval:doc.enable_notifications",
    "fieldname": "notification_cooldown",
    "fieldtype": "Int",
    "label": "Notification Cooldown (Minutes)"
+  },
+  {
+   "default": "All Checks",
+   "fieldname": "check_logging_mode",
+   "fieldtype": "Select",
+   "label": "Check Logging Mode",
+   "options": "Disabled\nChanges Only\nAll Checks"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-16 21:41:47.096565",
+ "modified": "2026-07-17 19:21:32.068393",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Monitor Settings",

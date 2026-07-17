@@ -1,0 +1,121 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-17 16:58:33.220702",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "general_section",
+  "device",
+  "started_at",
+  "ended_at",
+  "duration_minutes",
+  "status",
+  "reason_section",
+  "reason",
+  "statistics",
+  "number_of_checks",
+  "average_response_before_failure",
+  "notes_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "General"
+  },
+  {
+   "fieldname": "device",
+   "fieldtype": "Link",
+   "label": "Device",
+   "options": "Network Device"
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At"
+  },
+  {
+   "fieldname": "ended_at",
+   "fieldtype": "Datetime",
+   "label": "Ended At"
+  },
+  {
+   "fieldname": "duration_minutes",
+   "fieldtype": "Float",
+   "label": "Duration (Minutes)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Open\nClosed"
+  },
+  {
+   "fieldname": "reason_section",
+   "fieldtype": "Section Break",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "statistics",
+   "fieldtype": "Section Break",
+   "label": "Statistics"
+  },
+  {
+   "fieldname": "number_of_checks",
+   "fieldtype": "Int",
+   "label": "Number Of Checks",
+   "read_only": 1
+  },
+  {
+   "fieldname": "average_response_before_failure",
+   "fieldtype": "Float",
+   "label": "Average Response Before Failure",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-17 17:11:13.775524",
+ "modified_by": "Administrator",
+ "module": "Network",
+ "name": "Network Downtime",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
