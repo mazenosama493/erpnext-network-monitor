@@ -1,0 +1,226 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-16 21:52:16.845576",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "general_section",
+  "device_name",
+  "ip_address",
+  "device_type",
+  "enabled",
+  "description",
+  "network_information_section",
+  "host_name",
+  "mac_address",
+  "location",
+  "current_status_section",
+  "status",
+  "last_check",
+  "last_seen",
+  "response_time",
+  "last_state_change",
+  "monitoring_override_section",
+  "override_global_settings",
+  "monitoring_interval",
+  "ping_timeout",
+  "retry_count",
+  "retry_delay",
+  "alert_section",
+  "critical_device",
+  "notification_enabled",
+  "notes_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "General"
+  },
+  {
+   "fieldname": "device_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Device Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "IP Address",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "device_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Device Type",
+   "options": "Network Device Type"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "network_information_section",
+   "fieldtype": "Section Break",
+   "label": "Network Information"
+  },
+  {
+   "fieldname": "host_name",
+   "fieldtype": "Data",
+   "label": "Hostname"
+  },
+  {
+   "fieldname": "mac_address",
+   "fieldtype": "Data",
+   "label": "MAC Address"
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "label": "Location"
+  },
+  {
+   "fieldname": "current_status_section",
+   "fieldtype": "Section Break",
+   "label": "Current Status"
+  },
+  {
+   "default": "Unknown",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Unknown\nOnline\nOffline",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_check",
+   "fieldtype": "Datetime",
+   "label": "Last Check",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_seen",
+   "fieldtype": "Datetime",
+   "label": "Last Seen",
+   "read_only": 1
+  },
+  {
+   "fieldname": "response_time",
+   "fieldtype": "Float",
+   "label": "Response Time (ms)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_state_change",
+   "fieldtype": "Datetime",
+   "label": "Last State Change",
+   "read_only": 1
+  },
+  {
+   "fieldname": "monitoring_override_section",
+   "fieldtype": "Section Break",
+   "label": "Monitoring Override"
+  },
+  {
+   "default": "0\n\n",
+   "fieldname": "override_global_settings",
+   "fieldtype": "Check",
+   "label": "Override Global Settings"
+  },
+  {
+   "depends_on": "eval:doc.override_global_settings",
+   "fieldname": "monitoring_interval",
+   "fieldtype": "Int",
+   "label": "Monitoring Interval",
+   "mandatory_depends_on": "eval:doc.override_global_settings"
+  },
+  {
+   "depends_on": "eval:doc.override_global_settings",
+   "fieldname": "ping_timeout",
+   "fieldtype": "Float",
+   "label": "Ping Timeout",
+   "mandatory_depends_on": "eval:doc.override_global_settings"
+  },
+  {
+   "depends_on": "eval:doc.override_global_settings",
+   "fieldname": "retry_count",
+   "fieldtype": "Int",
+   "label": "Retry Count",
+   "mandatory_depends_on": "eval:doc.override_global_settings"
+  },
+  {
+   "depends_on": "eval:doc.override_global_settings",
+   "fieldname": "retry_delay",
+   "fieldtype": "Float",
+   "label": "Retry Delay",
+   "mandatory_depends_on": "eval:doc.override_global_settings"
+  },
+  {
+   "fieldname": "alert_section",
+   "fieldtype": "Section Break",
+   "label": "Alert"
+  },
+  {
+   "default": "0",
+   "fieldname": "critical_device",
+   "fieldtype": "Check",
+   "label": "Critical Device"
+  },
+  {
+   "default": "0",
+   "fieldname": "notification_enabled",
+   "fieldtype": "Check",
+   "label": "Notification Enabled"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-16 22:40:28.773189",
+ "modified_by": "Administrator",
+ "module": "Network",
+ "name": "Network Device",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
