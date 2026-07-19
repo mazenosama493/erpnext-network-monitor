@@ -11,6 +11,7 @@
   "max_workers",
   "retry_count",
   "retry_delay",
+  "packets_per_check",
   "section_break_z0jg",
   "log_level",
   "keep_logs_days",
@@ -93,7 +94,7 @@
    "label": "Notifications"
   },
   {
-   "default": "1\n",
+   "default": "1",
    "fieldname": "enable_notifications",
    "fieldtype": "Check",
    "label": "Enable Notifications"
@@ -111,13 +112,19 @@
    "fieldtype": "Select",
    "label": "Check Logging Mode",
    "options": "Disabled\nChanges Only\nAll Checks"
+  },
+  {
+   "default": "1",
+   "fieldname": "packets_per_check",
+   "fieldtype": "Int",
+   "label": "Packets Per Check"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-17 19:21:32.068393",
+ "modified": "2026-07-19 07:42:35.491183",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Monitor Settings",

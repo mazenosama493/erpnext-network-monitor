@@ -1,6 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "allow_rename": 0,
  "creation": "2026-07-17 16:58:33.220702",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -28,18 +28,28 @@
   {
    "fieldname": "device",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Device",
-   "options": "Network Device"
+   "options": "Network Device",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "started_at",
    "fieldtype": "Datetime",
-   "label": "Started At"
+   "in_list_view": 1,
+   "label": "Started At",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "ended_at",
    "fieldtype": "Datetime",
-   "label": "Ended At"
+   "in_list_view": 1,
+   "label": "Ended At",
+   "read_only": 1
   },
   {
    "fieldname": "duration_minutes",
@@ -50,8 +60,10 @@
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
-   "options": "Open\nClosed"
+   "options": "Open\nClosed",
+   "read_only": 1
   },
   {
    "fieldname": "reason_section",
@@ -60,8 +72,9 @@
   },
   {
    "fieldname": "reason",
-   "fieldtype": "Small Text",
-   "label": "Reason"
+   "fieldtype": "Select",
+   "label": "Reason",
+   "options": "Unknown\nNetwork Failure\nPower Failure\nMaintenance\nManual"
   },
   {
    "fieldname": "statistics",
@@ -94,7 +107,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-17 17:11:13.775524",
+ "modified": "2026-07-18 08:03:53.365490",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Downtime",
@@ -115,7 +128,7 @@
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
- "sort_field": "creation",
+ "sort_field": "started_at",
  "sort_order": "DESC",
  "states": []
 }

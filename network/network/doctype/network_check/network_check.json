@@ -11,11 +11,15 @@
   "check_time",
   "check_result_section",
   "status",
-  "response_time",
+  "avg_response_time",
   "error_message",
   "statistics_section",
-  "packet_loss_",
-  "ttl",
+  "packet_loss",
+  "min_response_time",
+  "max_response_time",
+  "jitter",
+  "packets_sent",
+  "packets_received",
   "execution_section",
   "worker",
   "execution_time"
@@ -65,12 +69,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "response_time",
-   "fieldtype": "Float",
-   "label": "Response Time (ms)",
-   "read_only": 1
-  },
-  {
    "fieldname": "error_message",
    "fieldtype": "Small Text",
    "label": "Error Message",
@@ -80,18 +78,6 @@
    "fieldname": "statistics_section",
    "fieldtype": "Section Break",
    "label": "Statistics"
-  },
-  {
-   "fieldname": "packet_loss_",
-   "fieldtype": "Percent",
-   "label": "Packet Loss (%)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "ttl",
-   "fieldtype": "Int",
-   "label": "TTL",
-   "read_only": 1
   },
   {
    "fieldname": "execution_section",
@@ -109,12 +95,54 @@
    "fieldtype": "Float",
    "label": "Duration (ms)",
    "read_only": 1
+  },
+  {
+   "fieldname": "avg_response_time",
+   "fieldtype": "Float",
+   "label": "Average Response Time (ms)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "packet_loss",
+   "fieldtype": "Percent",
+   "label": "Packet Loss (%)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "min_response_time",
+   "fieldtype": "Float",
+   "label": "Minimum Response Time (ms)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "max_response_time",
+   "fieldtype": "Float",
+   "label": "Maximum Response Time (ms)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "jitter",
+   "fieldtype": "Float",
+   "label": "Jitter (ms)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "packets_sent",
+   "fieldtype": "Int",
+   "label": "Packets Sent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "packets_received",
+   "fieldtype": "Int",
+   "label": "Packets Received",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-17 17:29:38.684789",
+ "modified": "2026-07-18 12:15:41.877568",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Check",

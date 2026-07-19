@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_rename": 0,
  "creation": "2026-07-16 21:52:16.845576",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -27,6 +26,7 @@
   "ping_timeout",
   "retry_count",
   "retry_delay",
+  "packets_per_check",
   "alert_section",
   "critical_device",
   "notification_enabled",
@@ -136,7 +136,7 @@
    "label": "Monitoring Override"
   },
   {
-   "default": "0\n\n",
+   "default": "0",
    "fieldname": "override_global_settings",
    "fieldtype": "Check",
    "label": "Override Global Settings"
@@ -213,15 +213,22 @@
    "fieldtype": "Table",
    "label": "Tags",
    "options": "Network Device Tags"
+  },
+  {
+   "default": "1",
+   "fieldname": "packets_per_check",
+   "fieldtype": "Int",
+   "label": "Packets Per Check"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-17 18:44:06.590215",
+ "modified": "2026-07-19 07:44:43.532814",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Device",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
