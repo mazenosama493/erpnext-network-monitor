@@ -1,8 +1,21 @@
 {
  "app": "network",
- "charts": [],
- "content": "[]",
- "creation": "2026-07-20 11:08:06.648362",
+ "charts": [
+  {
+   "chart_name": "Devices by Status",
+   "label": "Devices by Status"
+  },
+  {
+   "chart_name": "Checks By Status",
+   "label": "Checks By Status"
+  },
+  {
+   "chart_name": "Bar Chart For Downtimes",
+   "label": "Bar Chart For Downtimes"
+  }
+ ],
+ "content": "[{\"id\":\"OEr-55BpSt\",\"type\":\"paragraph\",\"data\":{\"text\":\"Network\",\"col\":12}},{\"id\":\"6xD0QI_n0c\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Bar Chart For Downtimes\",\"col\":12}},{\"id\":\"xRFcmY8H3_\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Devices by Status\",\"col\":6}},{\"id\":\"oRZr04A6oK\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Checks By Status\",\"col\":6}},{\"id\":\"9_V8RBjRI5\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Closed Downtimes\",\"col\":4}},{\"id\":\"sybZ6tbQKG\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Active Downtimes\",\"col\":4}},{\"id\":\"_nCvV5CEcA\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Last Week Alerts\",\"col\":4}},{\"id\":\"NOgaM-CWpN\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Online Devices\",\"col\":4}},{\"id\":\"t_QF3QAtxF\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Offline Devices\",\"col\":4}},{\"id\":\"7E8N2eG3MQ\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuration\",\"col\":4}},{\"id\":\"0vyv5Fvt6J\",\"type\":\"card\",\"data\":{\"card_name\":\"Master Data\",\"col\":4}},{\"id\":\"oK8dpXFhhz\",\"type\":\"card\",\"data\":{\"card_name\":\"Monitoring\",\"col\":4}}]",
+ "creation": "2026-07-20 14:03:26.884849",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -12,13 +25,143 @@
  "is_hidden": 0,
  "label": "Network",
  "link_type": "DocType",
- "links": [],
- "modified": "2026-07-20 11:08:06.648362",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Monitoring",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Checks",
+   "link_count": 0,
+   "link_to": "Network Check",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Downtimes",
+   "link_count": 0,
+   "link_to": "Network Downtime",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Alerts",
+   "link_count": 0,
+   "link_to": "Network Alert",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Master Data",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Devices",
+   "link_count": 0,
+   "link_to": "Network Device",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Device types",
+   "link_count": 0,
+   "link_to": "Network Device Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Tags",
+   "link_count": 0,
+   "link_to": "Network Tag",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sites",
+   "link_count": 0,
+   "link_to": "Network Site",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Configuration",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Settings",
+   "link_count": 0,
+   "link_to": "Network Monitor Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-07-20 15:40:58.366298",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "Closed Downtimes",
+   "number_card_name": "Closed Downtimes"
+  },
+  {
+   "label": "Online Devices",
+   "number_card_name": "Online Devices"
+  },
+  {
+   "label": "Last Week Alerts",
+   "number_card_name": "Active Alerts"
+  },
+  {
+   "label": "Active Downtimes",
+   "number_card_name": "Active Downtimes"
+  },
+  {
+   "label": "Offline Devices",
+   "number_card_name": "Offline Devices"
+  }
+ ],
  "owner": "Administrator",
+ "parent_page": "Network",
  "public": 1,
  "quick_lists": [],
  "roles": [],

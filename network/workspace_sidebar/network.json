@@ -1,11 +1,23 @@
 {
  "app": "network",
- "creation": "2026-07-20 10:23:36.815043",
+ "creation": "2026-07-20 13:39:28.197535",
  "docstatus": 0,
  "doctype": "Workspace Sidebar",
  "header_icon": "network",
  "idx": 0,
  "items": [
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "clipboard",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Network",
+   "link_to": "Network",
+   "link_type": "Workspace",
+   "show_arrow": 0,
+   "type": "Link"
+  },
   {
    "child": 0,
    "collapsible": 1,
@@ -38,6 +50,18 @@
    "keep_closed": 0,
    "label": "Tags",
    "link_to": "Network Tag",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "arrow-down",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Site",
+   "link_to": "Network Site",
    "link_type": "DocType",
    "show_arrow": 0,
    "type": "Link"
@@ -91,7 +115,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-20 10:32:45.901928",
+ "modified": "2026-07-20 13:52:04.171042",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network",

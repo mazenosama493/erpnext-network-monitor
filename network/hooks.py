@@ -10,16 +10,35 @@ app_license = "mit"
 
 
 fixtures = [
-    {"dt": "Workspace"},
-    {"dt": "Workspace Sidebar"},
-    {"dt": "Desktop Icon"},
-    {"dt": "Report"},
-    {"dt": "Dashboard Chart"},
-    {"dt": "Number Card"},
-    {"dt": "Notification"},
-    {"dt": "Client Script"},
-    {"dt": "Custom Field"},
-    {"dt": "Property Setter"},
+    {
+        "dt": "Workspace",
+        "filters": [["module", "=", "Network"]]
+    },
+    {
+        "dt": "Workspace Sidebar",
+        "filters": [["module", "=", "Network"]]
+    },
+    {
+        "dt": "Dashboard Chart",
+        "filters": [["module", "=", "Network"]]
+    },
+    {
+        "dt": "Number Card",
+        "filters": [["module", "=", "Network"]]
+    },
+    {
+        "dt": "Notification",
+        "filters": [["module", "=", "Network"]]
+    },
+    {
+        "dt": "Client Script"
+    },
+    {
+        "dt": "Custom Field"
+    },
+    {
+        "dt": "Property Setter"
+    }
 ]
 
 
