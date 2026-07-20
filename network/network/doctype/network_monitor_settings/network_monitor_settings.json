@@ -12,6 +12,7 @@
   "retry_count",
   "retry_delay",
   "packets_per_check",
+  "queue_batch_size",
   "section_break_z0jg",
   "log_level",
   "keep_logs_days",
@@ -118,13 +119,20 @@
    "fieldname": "packets_per_check",
    "fieldtype": "Int",
    "label": "Packets Per Check"
+  },
+  {
+   "default": "1",
+   "fieldname": "queue_batch_size",
+   "fieldtype": "Int",
+   "label": "Queue Batch Size",
+   "non_negative": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-19 07:42:35.491183",
+ "modified": "2026-07-20 09:04:04.669492",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Monitor Settings",

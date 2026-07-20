@@ -1,0 +1,101 @@
+{
+ "app": "network",
+ "creation": "2026-07-20 10:23:36.815043",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "header_icon": "network",
+ "idx": 0,
+ "items": [
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "server",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Devices",
+   "link_to": "Network Device",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "duplicate",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Device Types",
+   "link_to": "Network Device Type",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "tags",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Tags",
+   "link_to": "Network Tag",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "circle-check-big",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Checks",
+   "link_to": "Network Check",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "arrow-big-down-dash",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Downtimes",
+   "link_to": "Network Downtime",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "triangle-alert",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Alerts",
+   "link_to": "Network Alert",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "settings",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Settings",
+   "link_to": "Network Monitor Settings",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-07-20 10:32:45.901928",
+ "modified_by": "Administrator",
+ "module": "Network",
+ "name": "Network",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "Network"
+}

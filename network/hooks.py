@@ -9,6 +9,20 @@ app_license = "mit"
 # ------------------
 
 
+fixtures = [
+    {"dt": "Workspace"},
+    {"dt": "Workspace Sidebar"},
+    {"dt": "Desktop Icon"},
+    {"dt": "Report"},
+    {"dt": "Dashboard Chart"},
+    {"dt": "Number Card"},
+    {"dt": "Notification"},
+    {"dt": "Client Script"},
+    {"dt": "Custom Field"},
+    {"dt": "Property Setter"},
+]
+
+
 
 # required_apps = []
 

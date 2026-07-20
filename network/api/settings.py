@@ -13,6 +13,7 @@ def get_settings():
         "retry_delay": settings.retry_delay,
         "packets_per_check": settings.packets_per_check,
         "max_workers": settings.max_workers,
+        "queue_batch_size": settings.queue_batch_size,
         "logging_mode": settings.check_logging_mode,
         "log_level": settings.log_level,
         "notifications_enabled": settings.enable_notifications,
