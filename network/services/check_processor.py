@@ -1,10 +1,21 @@
 import frappe
 from frappe.utils import time_diff_in_seconds
+from network.services.notification_service import NotificationService
+
 
 
 class CheckProcessor:
+    def __init__(self):
+        self.notification_service = NotificationService()
 
     def process(self, checks):
+
+        
+
+        # Process checks in chronological order
+        checks.sort(
+            key=lambda check: check["check_time"]
+        )
 
         processed = 0
         failed = 0
@@ -380,28 +391,25 @@ class CheckProcessor:
             "Network Alert"
         )
 
-
         alert.device = device.name
-
         alert.device_type = device.device_type
-
         alert.alert_time = check["check_time"]
-
         alert.alert_type = "Device Down"
 
-
         if device.critical_device:
-
             alert.severity = "Critical"
-
         else:
-
             alert.severity = "Warning"
-
 
         alert.insert(
             ignore_permissions=True
         )
+
+        self.notification_service.send(
+            alert
+        )
+
+        return alert
 
 
 
@@ -426,3 +434,7 @@ class CheckProcessor:
         alert.insert(
             ignore_permissions=True
         )
+        self.notification_service.send(alert)
+
+
+        return alert

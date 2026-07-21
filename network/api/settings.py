@@ -17,7 +17,6 @@ def get_settings():
         "logging_mode": settings.check_logging_mode,
         "log_level": settings.log_level,
         "notifications_enabled": settings.enable_notifications,
-        "notification_cooldown": settings.notification_cooldown,
         "keep_logs_days": settings.keep_logs_days,
 
     }

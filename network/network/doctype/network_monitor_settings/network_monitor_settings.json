@@ -19,7 +19,7 @@
   "check_logging_mode",
   "notifications_section",
   "enable_notifications",
-  "notification_cooldown"
+  "notification_recipients"
  ],
  "fields": [
   {
@@ -101,13 +101,6 @@
    "label": "Enable Notifications"
   },
   {
-   "default": "10",
-   "depends_on": "eval:doc.enable_notifications",
-   "fieldname": "notification_cooldown",
-   "fieldtype": "Int",
-   "label": "Notification Cooldown (Minutes)"
-  },
-  {
    "default": "All Checks",
    "fieldname": "check_logging_mode",
    "fieldtype": "Select",
@@ -126,14 +119,20 @@
    "fieldtype": "Int",
    "label": "Queue Batch Size",
    "non_negative": 1
+  },
+  {
+   "fieldname": "notification_recipients",
+   "fieldtype": "Table",
+   "label": "Notification Recipients",
+   "options": "Network Notification Recipient"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-20 09:04:04.669492",
- "modified_by": "Administrator",
+ "modified": "2026-07-21 14:32:13.532531",
+ "modified_by": "accounting@gmail.com",
  "module": "Network",
  "name": "Network Monitor Settings",
  "owner": "Administrator",

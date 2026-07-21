@@ -216,6 +216,7 @@
   },
   {
    "default": "1",
+   "depends_on": "eval:doc.override_global_settings",
    "fieldname": "packets_per_check",
    "fieldtype": "Int",
    "label": "Packets Per Check"
@@ -224,8 +225,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-19 07:44:43.532814",
- "modified_by": "Administrator",
+ "modified": "2026-07-21 13:33:00.596650",
+ "modified_by": "accounting@gmail.com",
  "module": "Network",
  "name": "Network Device",
  "naming_rule": "Expression",
