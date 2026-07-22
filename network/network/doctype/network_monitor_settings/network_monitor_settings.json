@@ -31,40 +31,51 @@
   },
   {
    "default": "30\n",
+   "description": "Time between monitoring cycles in seconds.",
    "fieldname": "monitoring_interval_seconds",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Monitoring Interval (Seconds)",
+   "non_negative": 1,
    "reqd": 1
   },
   {
    "default": "1",
+   "description": "Maximum time to wait for a ping response.",
    "fieldname": "ping_timeout",
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Ping Timeout (Seconds)",
+   "non_negative": 1,
    "reqd": 1
   },
   {
    "default": "20\n",
+   "description": "Maximum number of concurrent monitoring workers.",
    "fieldname": "max_workers",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Max Workers",
+   "non_negative": 1,
    "reqd": 1
   },
   {
+   "default": "0",
+   "description": "Number of retry attempts before considering the device offline.",
    "fieldname": "retry_count",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Retry Count",
+   "non_negative": 1,
    "reqd": 1
   },
   {
    "default": "1",
+   "description": "Delay between retry attempts.",
    "fieldname": "retry_delay",
    "fieldtype": "Float",
    "label": "Retry Delay (Seconds)",
+   "non_negative": 1,
    "reqd": 1
   },
   {
@@ -86,9 +97,12 @@
   },
   {
    "default": "30\n",
+   "description": "Number of days to retain monitoring history.",
    "fieldname": "keep_logs_days",
    "fieldtype": "Int",
-   "label": "Keep Logs (Days)"
+   "label": "Keep Logs (Days)",
+   "non_negative": 1,
+   "reqd": 1
   },
   {
    "fieldname": "notifications_section",
@@ -110,19 +124,25 @@
   },
   {
    "default": "1",
+   "description": "Number of ICMP packets sent during each monitoring cycle.",
    "fieldname": "packets_per_check",
    "fieldtype": "Int",
-   "label": "Packets Per Check"
+   "label": "Packets Per Check",
+   "non_negative": 1,
+   "reqd": 1
   },
   {
    "default": "1",
+   "description": "Number of devices processed in each synchronization batch.",
    "fieldname": "queue_batch_size",
    "fieldtype": "Int",
    "label": "Queue Batch Size",
-   "non_negative": 1
+   "non_negative": 1,
+   "reqd": 1
   },
   {
    "depends_on": "eval:doc.enable_notifications",
+   "description": "Users who will receive monitoring notifications.",
    "fieldname": "notification_recipients",
    "fieldtype": "Table",
    "label": "Notification Recipients",
@@ -131,16 +151,19 @@
   {
    "default": "0",
    "depends_on": "eval:doc.enable_notifications",
+   "description": "Delay before sending an offline notification.",
    "fieldname": "offline_alert_delay",
    "fieldtype": "Int",
-   "label": "Offline Alert Delay (Minutes):"
+   "label": "Offline Alert Delay (Minutes)",
+   "non_negative": 1,
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-22 11:48:28.507590",
+ "modified": "2026-07-22 14:23:56.550181",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Monitor Settings",

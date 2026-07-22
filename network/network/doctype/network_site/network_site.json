@@ -25,26 +25,32 @@
    "label": "General"
   },
   {
+   "description": "Human-readable name of the site.",
    "fieldname": "site_name",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Site Name",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
+   "description": "Short unique code used to identify the site.",
    "fieldname": "site_code",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Site Code",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "default": "1",
+   "description": "Enable or disable this site.",
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
   },
   {
+   "description": "Brief description of the site.",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description"
@@ -55,21 +61,25 @@
    "label": "Contact"
   },
   {
+   "description": "Physical address of the site.",
    "fieldname": "address",
    "fieldtype": "Small Text",
    "label": "Address"
   },
   {
+   "description": "Primary contact for this site.",
    "fieldname": "contact_person",
    "fieldtype": "Data",
    "label": "Contact Person"
   },
   {
+   "description": "Primary contact phone number.",
    "fieldname": "phone",
    "fieldtype": "Data",
    "label": "Phone"
   },
   {
+   "description": "Primary contact email address.",
    "fieldname": "email",
    "fieldtype": "Data",
    "label": "Email"
@@ -80,6 +90,7 @@
    "label": "Additional Information"
   },
   {
+   "description": "Additional notes about the site.",
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
@@ -88,7 +99,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-17 18:01:13.274317",
+ "modified": "2026-07-22 15:02:19.561930",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Site",

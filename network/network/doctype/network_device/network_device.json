@@ -42,6 +42,7 @@
    "label": "General"
   },
   {
+   "description": "Friendly name used to identify the device.",
    "fieldname": "device_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -50,14 +51,16 @@
    "search_index": 1
   },
   {
+   "description": "Hostname, FQDN or IPv4 address of the monitored device.",
    "fieldname": "ip_address",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "IP Address",
+   "label": "IP Address/Host",
    "reqd": 1,
    "unique": 1
   },
   {
+   "description": "Device category used for classification and reporting.",
    "fieldname": "device_type",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -67,6 +70,7 @@
   },
   {
    "default": "1",
+   "description": "Include this device in monitoring.",
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
@@ -82,12 +86,14 @@
    "label": "Network Information"
   },
   {
+   "description": "Resolved hostname or DNS name.",
    "fieldname": "host_name",
    "fieldtype": "Data",
    "label": "Hostname",
    "search_index": 1
   },
   {
+   "description": "Device MAC address.",
    "fieldname": "mac_address",
    "fieldtype": "Data",
    "label": "MAC Address",
@@ -143,31 +149,39 @@
   },
   {
    "depends_on": "eval:doc.override_global_settings",
+   "description": "Override global monitoring interval.",
    "fieldname": "monitoring_interval",
    "fieldtype": "Int",
    "label": "Monitoring Interval",
-   "mandatory_depends_on": "eval:doc.override_global_settings"
+   "mandatory_depends_on": "eval:doc.override_global_settings",
+   "non_negative": 1
   },
   {
    "depends_on": "eval:doc.override_global_settings",
+   "description": "Override global ping timeout.",
    "fieldname": "ping_timeout",
    "fieldtype": "Float",
    "label": "Ping Timeout",
-   "mandatory_depends_on": "eval:doc.override_global_settings"
+   "mandatory_depends_on": "eval:doc.override_global_settings",
+   "non_negative": 1
   },
   {
    "depends_on": "eval:doc.override_global_settings",
+   "description": "Override global retry count.",
    "fieldname": "retry_count",
    "fieldtype": "Int",
    "label": "Retry Count",
-   "mandatory_depends_on": "eval:doc.override_global_settings"
+   "mandatory_depends_on": "eval:doc.override_global_settings",
+   "non_negative": 1
   },
   {
    "depends_on": "eval:doc.override_global_settings",
+   "description": "Override global retry delay.",
    "fieldname": "retry_delay",
    "fieldtype": "Float",
    "label": "Retry Delay",
-   "mandatory_depends_on": "eval:doc.override_global_settings"
+   "mandatory_depends_on": "eval:doc.override_global_settings",
+   "non_negative": 1
   },
   {
    "fieldname": "alert_section",
@@ -176,12 +190,14 @@
   },
   {
    "default": "0",
+   "description": "Mark this device as critical.",
    "fieldname": "critical_device",
    "fieldtype": "Check",
    "label": "Critical Device"
   },
   {
    "default": "1",
+   "description": "Enable notifications for this device.",
    "fieldname": "notification_enabled",
    "fieldtype": "Check",
    "label": "Notification Enabled"
@@ -197,6 +213,7 @@
    "label": "Notes"
   },
   {
+   "description": "Physical location where the device is installed.",
    "fieldname": "site",
    "fieldtype": "Link",
    "label": "Site",
@@ -217,16 +234,19 @@
   {
    "default": "1",
    "depends_on": "eval:doc.override_global_settings",
+   "description": "Override global packets per check.",
    "fieldname": "packets_per_check",
    "fieldtype": "Int",
-   "label": "Packets Per Check"
+   "label": "Packets Per Check",
+   "mandatory_depends_on": "eval:doc.override_global_settings",
+   "non_negative": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-21 13:33:00.596650",
- "modified_by": "accounting@gmail.com",
+ "modified": "2026-07-22 14:41:23.235528",
+ "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Device",
  "naming_rule": "Expression",
