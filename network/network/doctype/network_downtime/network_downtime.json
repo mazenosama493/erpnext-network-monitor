@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_rename": 0,
  "creation": "2026-07-17 16:58:33.220702",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -11,6 +10,7 @@
   "ended_at",
   "duration_minutes",
   "status",
+  "alert_sent",
   "reason_section",
   "reason",
   "statistics",
@@ -102,12 +102,19 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
+  },
+  {
+   "default": "0",
+   "fieldname": "alert_sent",
+   "fieldtype": "Check",
+   "label": "Alert Sent",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-18 08:03:53.365490",
+ "modified": "2026-07-22 13:18:22.619719",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Downtime",

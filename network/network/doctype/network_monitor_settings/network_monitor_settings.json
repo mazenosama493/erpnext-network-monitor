@@ -19,7 +19,8 @@
   "check_logging_mode",
   "notifications_section",
   "enable_notifications",
-  "notification_recipients"
+  "notification_recipients",
+  "offline_alert_delay"
  ],
  "fields": [
   {
@@ -121,18 +122,26 @@
    "non_negative": 1
   },
   {
+   "depends_on": "eval:doc.enable_notifications",
    "fieldname": "notification_recipients",
    "fieldtype": "Table",
    "label": "Notification Recipients",
    "options": "Network Notification Recipient"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.enable_notifications",
+   "fieldname": "offline_alert_delay",
+   "fieldtype": "Int",
+   "label": "Offline Alert Delay (Minutes):"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-21 14:32:13.532531",
- "modified_by": "accounting@gmail.com",
+ "modified": "2026-07-22 11:48:28.507590",
+ "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Monitor Settings",
  "owner": "Administrator",

@@ -3,10 +3,36 @@ from frappe.utils import time_diff_in_seconds
 from network.services.notification_service import NotificationService
 
 
-
 class CheckProcessor:
     def __init__(self):
         self.notification_service = NotificationService()
+
+    def should_send_offline_alert(
+        self,
+        downtime,
+        check
+    ):
+
+        settings = frappe.get_single(
+            "Network Monitor Settings"
+        )
+
+        delay = (
+            settings.offline_alert_delay or 0
+        )
+
+        if downtime.alert_sent:
+            return False
+
+        if delay == 0:
+            return True
+
+        seconds = time_diff_in_seconds(
+            check["check_time"],
+            downtime.started_at
+        )
+
+        return seconds >= (delay * 60)
 
     def process(self, checks):
 
@@ -224,7 +250,7 @@ class CheckProcessor:
 
     def handle_device_down(self, device, check):
 
-        downtime = frappe.db.exists(
+        downtime_name = frappe.db.exists(
             "Network Downtime",
             {
                 "device": device.name,
@@ -232,36 +258,52 @@ class CheckProcessor:
             }
         )
 
+        # ---------------------------------------
+        # Existing Downtime
+        # ---------------------------------------
+        if downtime_name:
 
-        if downtime:
-
-            # already down
-            self.increment_downtime_checks(
-                downtime
+            downtime = self.increment_downtime_checks(
+                downtime_name
             )
 
-
-        else:
-
-            # first failure
-            self.create_downtime(
-                device,
+            if self.should_send_offline_alert(
+                downtime,
                 check
-            )
+            ):
 
-            self.create_alert(
-                device,
-                check
-            )
+                self.create_alert(
+                    device,
+                    check
+                )
 
+                downtime.alert_sent = 1
+
+                downtime.save(
+                    ignore_permissions=True
+                )
+
+            return
+
+        # ---------------------------------------
+        # First Failure
+        # ---------------------------------------
+        self.create_downtime(
+            device,
+            check
+        )
 
     # --------------------------------------------------
     # Device Recovery
     # --------------------------------------------------
 
-    def handle_device_recovered(self, device, check):
+    def handle_device_recovered(
+        self,
+        device,
+        check
+    ):
 
-        downtime = frappe.db.exists(
+        downtime_name = frappe.db.exists(
             "Network Downtime",
             {
                 "device": device.name,
@@ -269,20 +311,25 @@ class CheckProcessor:
             }
         )
 
+        if not downtime_name:
+            return
 
-        if downtime:
+        downtime = frappe.get_doc(
+            "Network Downtime",
+            downtime_name
+        )
 
-            self.close_downtime(
-                device,
-                check
-            )
+        self.close_downtime(
+            device,
+            check
+        )
+
+        if downtime.alert_sent:
 
             self.create_recovery_alert(
                 device,
                 check
             )
-
-
     # --------------------------------------------------
     # Downtime
     # --------------------------------------------------
@@ -301,6 +348,7 @@ class CheckProcessor:
         doc.status = "Open"
 
         doc.number_of_checks = 1
+        doc.alert_sent = 0
 
 
         doc.average_response_before_failure = (
@@ -317,22 +365,25 @@ class CheckProcessor:
 
 
 
-    def increment_downtime_checks(self, downtime_name):
+    def increment_downtime_checks(
+        self,
+        downtime_name
+    ):
 
         downtime = frappe.get_doc(
             "Network Downtime",
             downtime_name
         )
 
-
         downtime.number_of_checks = (
             downtime.number_of_checks or 0
         ) + 1
 
-
         downtime.save(
             ignore_permissions=True
         )
+
+        return downtime
 
 
 
