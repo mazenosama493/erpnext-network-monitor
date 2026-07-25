@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:code",
  "creation": "2026-07-16 21:43:02.366439",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -59,10 +60,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-16 21:49:39.920636",
+ "modified": "2026-07-25 08:46:31.228401",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Device Type",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

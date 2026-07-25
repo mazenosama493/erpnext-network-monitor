@@ -15,8 +15,6 @@ def get_settings():
         "max_workers": settings.max_workers,
         "queue_batch_size": settings.queue_batch_size,
         "logging_mode": settings.check_logging_mode,
-        "log_level": settings.log_level,
         "notifications_enabled": settings.enable_notifications,
-        "keep_logs_days": settings.keep_logs_days,
 
     }

@@ -7,7 +7,6 @@ class NetworkMonitorSettings(Document):
 
     def validate(self):
         self.validate_monitoring()
-        self.validate_logging()
         self.validate_notifications()
 
     # --------------------------------------------------
@@ -49,17 +48,6 @@ class NetworkMonitorSettings(Document):
         if self.queue_batch_size <= 0:
             frappe.throw(
                 _("Queue Batch Size must be greater than 0.")
-            )
-
-    # --------------------------------------------------
-    # Logging
-    # --------------------------------------------------
-
-    def validate_logging(self):
-
-        if self.keep_logs_days <= 0:
-            frappe.throw(
-                _("Keep Logs (Days) must be greater than 0.")
             )
 
     # --------------------------------------------------

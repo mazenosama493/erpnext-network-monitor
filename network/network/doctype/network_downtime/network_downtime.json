@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "autoname": "DT-.YYYY.-.MM.-.DD.-.######",
  "creation": "2026-07-17 16:58:33.220702",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -71,6 +72,8 @@
    "label": "Reason"
   },
   {
+   "default": "Unknown",
+   "description": "Reason for the downtime if identified.",
    "fieldname": "reason",
    "fieldtype": "Select",
    "label": "Reason",
@@ -90,7 +93,7 @@
   {
    "fieldname": "average_response_before_failure",
    "fieldtype": "Float",
-   "label": "Average Response Before Failure",
+   "label": "Average Response Before Failure (ms)",
    "read_only": 1
   },
   {
@@ -99,6 +102,7 @@
    "label": "Notes"
   },
   {
+   "description": "Additional notes about the downtime.",
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
@@ -114,10 +118,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-22 13:18:22.619719",
+ "modified": "2026-07-25 08:51:01.569615",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Downtime",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

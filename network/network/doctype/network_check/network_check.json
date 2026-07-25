@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "CHK-.YYYY.-.MM.-.DD.-.######",
  "creation": "2026-07-17 17:19:52.057538",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -142,10 +143,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-18 12:15:41.877568",
+ "modified": "2026-07-25 08:49:30.895136",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Check",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

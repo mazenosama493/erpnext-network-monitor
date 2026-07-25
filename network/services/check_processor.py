@@ -79,40 +79,39 @@ class CheckProcessor:
         old_status = device.status
         new_status = check["status"]
 
-
-        # Save check history
+        # ---------------------------------------
+        # Save Check History
+        # ---------------------------------------
         self.create_network_check(
             device,
             check
         )
 
-
-        # --------------------------------------------------
-        # Handle device state
-        # --------------------------------------------------
+        # ---------------------------------------
+        # Handle State Changes
+        # ---------------------------------------
 
         if new_status == "Offline":
 
-            # Every offline check counts
             self.handle_device_down(
                 device,
                 check
             )
-
 
         elif (
             old_status == "Offline"
             and new_status == "Online"
         ):
 
-            # Recovery only
             self.handle_device_recovered(
                 device,
                 check
             )
 
+        # ---------------------------------------
+        # Update Current Device State
+        # ---------------------------------------
 
-        # Update current device state
         self.update_device(
             device,
             check
@@ -154,23 +153,23 @@ class CheckProcessor:
 
     def update_device(self, device, check):
 
-        device.status = check["status"]
+        old_status = device.status
+        new_status = check["status"]
 
+        # Update current status
+        device.status = new_status
         device.last_check = check["check_time"]
+        device.response_time = check.get("avg_response_time")
 
-        device.response_time = check.get(
-            "avg_response_time"
-        )
-
-
-        if check["status"] == "Online":
-
+        # Last seen only when device is online
+        if new_status == "Online":
             device.last_seen = check["check_time"]
 
+        # Update last state change ONLY if status changed
+        if old_status != new_status:
+            device.last_state_change = check["check_time"]
 
-        device.save(
-            ignore_permissions=True
-        )
+        device.save(ignore_permissions=True)
 
 
     # --------------------------------------------------
@@ -274,6 +273,7 @@ class CheckProcessor:
 
                 self.create_alert(
                     device,
+                    downtime,
                     check
                 )
 
@@ -288,11 +288,27 @@ class CheckProcessor:
         # ---------------------------------------
         # First Failure
         # ---------------------------------------
-        self.create_downtime(
+        downtime = self.create_downtime(
             device,
             check
         )
 
+        if self.should_send_offline_alert(
+            downtime,
+            check
+        ):
+
+            self.create_alert(
+                device,
+                downtime,
+                check
+            )
+
+            downtime.alert_sent = 1
+
+            downtime.save(
+                ignore_permissions=True
+            )
     # --------------------------------------------------
     # Device Recovery
     # --------------------------------------------------
@@ -328,6 +344,7 @@ class CheckProcessor:
 
             self.create_recovery_alert(
                 device,
+                downtime,
                 check
             )
     # --------------------------------------------------
@@ -436,7 +453,12 @@ class CheckProcessor:
     # Alerts
     # --------------------------------------------------
 
-    def create_alert(self, device, check):
+    def create_alert(
+        self,
+        device,
+        downtime,
+        check
+    ):
 
         alert = frappe.new_doc(
             "Network Alert"
@@ -444,6 +466,7 @@ class CheckProcessor:
 
         alert.device = device.name
         alert.device_type = device.device_type
+        alert.downtime = downtime.name
         alert.alert_time = check["check_time"]
         alert.alert_type = "Device Down"
 
@@ -464,28 +487,30 @@ class CheckProcessor:
 
 
 
-    def create_recovery_alert(self, device, check):
+    def create_recovery_alert(
+        self,
+        device,
+        downtime,
+        check
+    ):
 
         alert = frappe.new_doc(
             "Network Alert"
         )
 
-
         alert.device = device.name
-
         alert.device_type = device.device_type
-
+        alert.downtime = downtime.name
         alert.alert_time = check["check_time"]
-
         alert.alert_type = "Device Recovered"
-
         alert.severity = "Info"
-
 
         alert.insert(
             ignore_permissions=True
         )
-        self.notification_service.send(alert)
 
+        self.notification_service.send(
+            alert
+        )
 
         return alert

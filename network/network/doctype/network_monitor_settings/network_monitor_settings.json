@@ -14,8 +14,6 @@
   "packets_per_check",
   "queue_batch_size",
   "section_break_z0jg",
-  "log_level",
-  "keep_logs_days",
   "check_logging_mode",
   "notifications_section",
   "enable_notifications",
@@ -84,25 +82,9 @@
    "label": "Logging"
   },
   {
-   "default": "INFO",
-   "fieldname": "log_level",
-   "fieldtype": "Select",
-   "label": "Log Level",
-   "options": "DEBUG\nINFO\nWARNING\nERROR\nCRITICAL"
-  },
-  {
    "fieldname": "monitoring_section",
    "fieldtype": "Section Break",
    "label": "Monitoring"
-  },
-  {
-   "default": "30\n",
-   "description": "Number of days to retain monitoring history.",
-   "fieldname": "keep_logs_days",
-   "fieldtype": "Int",
-   "label": "Keep Logs (Days)",
-   "non_negative": 1,
-   "reqd": 1
   },
   {
    "fieldname": "notifications_section",
@@ -163,7 +145,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-22 14:23:56.550181",
+ "modified": "2026-07-25 09:25:39.558364",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Monitor Settings",

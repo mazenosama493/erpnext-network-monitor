@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "autoname": "ALT-.YYYY.-.MM.-.DD.-.######",
  "creation": "2026-07-17 17:36:36.661503",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -11,6 +12,7 @@
   "alert_section",
   "alert_type",
   "severity",
+  "downtime",
   "notification_section",
   "notification_sent",
   "notification_time",
@@ -113,6 +115,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:[\"Device Down\",\"High Latency\",\"Packet Loss\"].includes(doc.alert_type)",
    "fieldname": "acknowledged",
    "fieldtype": "Check",
    "label": "Acknowledged",
@@ -132,15 +135,23 @@
    "fieldtype": "Datetime",
    "label": "Acknowledged At",
    "read_only": 1
+  },
+  {
+   "fieldname": "downtime",
+   "fieldtype": "Link",
+   "label": "Downtime",
+   "options": "Network Downtime",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-18 07:59:29.377633",
+ "modified": "2026-07-25 13:18:55.846576",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Alert",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

@@ -48,9 +48,67 @@ class NetworkDevice(Document):
 
         self.validate_override()
 
+        self.validate_duplicate_tags()
+
+        self.validate_device_type()
+
+        self.validate_site()
+
+        self.validate_tags()
+
     # --------------------------------------------------
     # Normalize
     # --------------------------------------------------
+
+
+    def validate_tags(self):
+
+        for row in self.tags:
+
+            enabled = frappe.db.get_value(
+                "Network Tag",
+                row.tag,
+                "enabled",
+            )
+
+            if not enabled:
+                frappe.throw(
+                    _("Tag '{0}' is disabled.").format(
+                        row.tag
+                    )
+                )
+
+
+    def validate_site(self):
+
+        enabled = frappe.db.get_value(
+            "Network Site",
+            self.site,
+            "enabled",
+        )
+
+        if not enabled:
+            frappe.throw(
+                _("Site '{0}' is disabled.").format(
+                    self.site
+                )
+            )
+
+
+    def validate_device_type(self):
+
+        enabled = frappe.db.get_value(
+            "Network Device Type",
+            self.device_type,
+            "enabled",
+        )
+
+        if not enabled:
+            frappe.throw(
+                _("Device Type '{0}' is disabled.").format(
+                    self.device_type
+                )
+            )
 
     def normalize_fields(self):
 
@@ -221,3 +279,14 @@ class NetworkDevice(Document):
                     "Packets Per Check must be greater than 0."
                 )
             )
+
+    def validate_duplicate_tags(self):
+        tags = []
+
+        for row in self.tags:
+            if row.tag in tags:
+                frappe.throw(
+                    _("Tag '{0}' is selected more than once.").format(row.tag)
+                )
+
+            tags.append(row.tag)
