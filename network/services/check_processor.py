@@ -357,28 +357,30 @@ class CheckProcessor:
             "Network Downtime"
         )
 
-
         doc.device = device.name
 
         doc.started_at = check["check_time"]
 
         doc.status = "Open"
 
-        doc.number_of_checks = 1
-        doc.alert_sent = 0
+        doc.reason = (
+            check.get("failure_reason")
+            or "Unknown"
+        )
 
+        doc.number_of_checks = 1
+
+        doc.alert_sent = 0
 
         doc.average_response_before_failure = (
             device.response_time
         )
 
-
         doc.insert(
             ignore_permissions=True
         )
 
-
-        return doc.name
+        return doc
 
 
 
@@ -468,8 +470,18 @@ class CheckProcessor:
         alert.device_type = device.device_type
         alert.downtime = downtime.name
         alert.alert_time = check["check_time"]
-        alert.alert_type = "Device Down"
 
+        # ---------------------------------------
+        # Alert Type
+        # ---------------------------------------
+        if downtime.reason == "Internet Failure":
+            alert.alert_type = "Internet Failure"
+        else:
+            alert.alert_type = "Device Down"
+
+        # ---------------------------------------
+        # Severity
+        # ---------------------------------------
         if device.critical_device:
             alert.severity = "Critical"
         else:

@@ -13,6 +13,7 @@ def get_devices():
             d.ip_address,
             d.device_type,
             d.site,
+            d.external_device,
             d.override_global_settings,
             d.packets_per_check,
             d.monitoring_interval,

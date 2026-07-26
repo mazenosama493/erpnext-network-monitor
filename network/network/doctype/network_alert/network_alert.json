@@ -67,7 +67,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Alert Type",
-   "options": "Device Down\nDevice Recovered\nHigh Latency\nPacket Loss",
+   "options": "Device Down\nDevice Recovered\nInternet Failure\nHigh Latency\nPacket Loss",
    "read_only": 1,
    "reqd": 1
   },
@@ -147,7 +147,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-25 13:18:55.846576",
+ "modified": "2026-07-26 11:49:42.443188",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Alert",

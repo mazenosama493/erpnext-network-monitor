@@ -10,6 +10,7 @@
   "device_type",
   "enabled",
   "description",
+  "external_device",
   "network_information_section",
   "host_name",
   "mac_address",
@@ -240,12 +241,18 @@
    "label": "Packets Per Check",
    "mandatory_depends_on": "eval:doc.override_global_settings",
    "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "external_device",
+   "fieldtype": "Check",
+   "label": "External Device"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-22 14:41:23.235528",
+ "modified": "2026-07-26 11:03:35.054929",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Device",
