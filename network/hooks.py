@@ -19,6 +19,10 @@ fixtures = [
         "filters": [["module", "=", "Network"]]
     },
     {
+        "dt": "Desktop Icon",
+        "filters": [["label", "=", "Network"]]
+    },
+    {
         "dt": "Dashboard Chart",
         "filters": [["module", "=", "Network"]]
     },
@@ -38,6 +42,14 @@ fixtures = [
     },
     {
         "dt": "Property Setter"
+    },
+    {
+        "dt": "Role",
+        "filters": [["name", "in", ["Network Manager", "Network Operator"]]]
+    },
+    {
+        "dt": "Custom DocPerm",
+        "filters": [["role", "in", ["Network Manager", "Network Operator"]]]
     }
 ]
 
