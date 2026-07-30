@@ -35,6 +35,34 @@ fixtures = [
         "filters": [["module", "=", "Network"]]
     },
     {
+        "dt": "Role",
+        "filters": [
+            [
+                "role_name",
+                "in",
+                [
+                    "Network Manager",
+                    "Network Operator",
+                    "Network Monitor"
+                ]
+            ]
+        ]
+    },
+    {
+        "dt": "Custom DocPerm",
+        "filters": [
+            [
+                "role",
+                "in",
+                [
+                    "Network Manager",
+                    "Network Operator",
+                    "Network Monitor"
+                ]
+            ]
+        ]
+    },
+    {
         "dt": "Client Script"
     },
     {
@@ -42,14 +70,6 @@ fixtures = [
     },
     {
         "dt": "Property Setter"
-    },
-    {
-        "dt": "Role",
-        "filters": [["name", "in", ["Network Manager", "Network Operator"]]]
-    },
-    {
-        "dt": "Custom DocPerm",
-        "filters": [["role", "in", ["Network Manager", "Network Operator"]]]
     }
 ]
 
