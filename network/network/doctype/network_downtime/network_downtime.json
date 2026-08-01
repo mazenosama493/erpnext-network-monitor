@@ -56,7 +56,8 @@
    "fieldname": "duration_minutes",
    "fieldtype": "Float",
    "label": "Duration (Minutes)",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "status",
@@ -64,7 +65,8 @@
    "in_list_view": 1,
    "label": "Status",
    "options": "Open\nClosed",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "reason_section",
@@ -77,7 +79,8 @@
    "fieldname": "reason",
    "fieldtype": "Select",
    "label": "Reason",
-   "options": "Unknown\nNetwork Failure\nInternet Failure\nPower Failure\nMaintenance\nManual"
+   "options": "Unknown\nNetwork Failure\nInternet Failure\nPower Failure\nMaintenance\nManual",
+   "search_index": 1
   },
   {
    "fieldname": "statistics",
@@ -118,7 +121,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-25 14:02:24.798449",
+ "modified": "2026-08-01 09:04:10.832277",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Downtime",

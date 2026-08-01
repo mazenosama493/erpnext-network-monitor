@@ -74,7 +74,8 @@
    "description": "Include this device in monitoring.",
    "fieldname": "enabled",
    "fieldtype": "Check",
-   "label": "Enabled"
+   "label": "Enabled",
+   "search_index": 1
   },
   {
    "fieldname": "description",
@@ -111,7 +112,8 @@
    "fieldtype": "Select",
    "label": "Status",
    "options": "Unknown\nOnline\nOffline",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "last_check",
@@ -129,7 +131,8 @@
    "fieldname": "response_time",
    "fieldtype": "Float",
    "label": "Response Time (ms)",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "last_state_change",
@@ -219,7 +222,8 @@
    "fieldtype": "Link",
    "label": "Site",
    "options": "Network Site",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "classifications_section",
@@ -252,7 +256,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-26 11:03:35.054929",
+ "modified": "2026-08-01 09:00:55.925361",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Device",

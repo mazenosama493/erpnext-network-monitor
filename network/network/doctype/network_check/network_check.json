@@ -55,7 +55,8 @@
    "in_list_view": 1,
    "label": "Check Time",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "check_result_section",
@@ -101,13 +102,15 @@
    "fieldname": "avg_response_time",
    "fieldtype": "Float",
    "label": "Average Response Time (ms)",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "packet_loss",
    "fieldtype": "Percent",
    "label": "Packet Loss (%)",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "min_response_time",
@@ -143,7 +146,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-25 08:49:30.895136",
+ "modified": "2026-08-01 09:02:59.708441",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Check",
