@@ -52,24 +52,28 @@ class NotificationService:
 
     def send_system_notification(self, alert, device):
 
-
         settings = frappe.get_single(
             "Network Monitor Settings"
         )
 
-        users = [
-            row.recipient
-            for row in settings.notification_recipients
-            if row.enabled and row.recipient
-        ]
+        users = []
+        for row in settings.notification_recipients:
+            if not (row.enabled and row.recipient):
+                continue
+
+            email = frappe.db.get_value("User", row.recipient, "email")
+            if email:
+                users.append(email)
+
+        users = list(dict.fromkeys(users))
 
         if not users:
             return
-        
+
         frappe.log_error(
-                title="Notification Debug Users",
-                message=str(users)
-            )
+            title="Notification Debug Users",
+            message=str(users),
+        )
 
         enqueue_create_notification(
             users=users,

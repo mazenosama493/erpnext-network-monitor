@@ -102,7 +102,7 @@
    "fieldname": "check_logging_mode",
    "fieldtype": "Select",
    "label": "Check Logging Mode",
-   "options": "Disabled\nChanges Only\nAll Checks"
+   "options": "Disabled\nAll Checks"
   },
   {
    "default": "1",
@@ -145,7 +145,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-25 09:25:39.558364",
+ "modified": "2026-08-02 13:39:15.332639",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Monitor Settings",

@@ -74,6 +74,13 @@ fixtures = [
 ]
 
 
+doc_events = {
+    "Notification Log": {
+        "after_insert": "network.events.notification.after_notification_insert"
+    }
+}
+
+
 
 # required_apps = []
 

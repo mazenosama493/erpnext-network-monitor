@@ -1,6 +1,6 @@
 {
  "app": "network",
- "creation": "2026-07-20 13:39:28.197535",
+ "creation": "2026-08-02 13:45:30.998697",
  "docstatus": 0,
  "doctype": "Workspace Sidebar",
  "header_icon": "network",
@@ -115,7 +115,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-20 13:52:04.171042",
+ "modified": "2026-08-02 14:00:11.575184",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network",
