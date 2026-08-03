@@ -18,7 +18,9 @@
   "number_of_checks",
   "average_response_before_failure",
   "notes_section",
-  "notes"
+  "notes",
+  "device_disabled",
+  "monitoring_down"
  ],
  "fields": [
   {
@@ -116,12 +118,28 @@
    "fieldtype": "Check",
    "label": "Alert Sent",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "device_disabled",
+   "fieldtype": "Check",
+   "label": "Device Disabled",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "monitoring_down",
+   "fieldtype": "Check",
+   "label": "Monitoring Down",
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-01 09:04:10.832277",
+ "modified": "2026-08-03 08:34:38.273845",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Downtime",

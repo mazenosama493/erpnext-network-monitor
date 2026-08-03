@@ -5,7 +5,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
-
+from network.api.downtime import close_open_downtimes
 
 class NetworkDevice(Document):
 
@@ -31,6 +31,17 @@ class NetworkDevice(Document):
         self.name = make_autoname(
             f"{code}-.#####"
         )
+
+    def on_update(self):
+        if (
+            not self.is_new()
+            and self.has_value_changed("enabled")
+            and not self.enabled
+        ):
+            close_open_downtimes(
+                device=self.name,
+                device_disabled=True,
+            )
 
     # --------------------------------------------------
     # Validation
@@ -290,3 +301,4 @@ class NetworkDevice(Document):
                 )
 
             tags.append(row.tag)
+

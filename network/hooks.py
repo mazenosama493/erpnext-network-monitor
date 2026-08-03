@@ -80,6 +80,10 @@ doc_events = {
     }
 }
 
+doctype_list_js = {
+    "Network Device": "public/js/network_device_list.js"
+}
+
 
 
 # required_apps = []

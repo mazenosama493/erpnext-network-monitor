@@ -1,6 +1,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from network.api.downtime import close_open_downtimes
 
 
 class NetworkMonitorSettings(Document):
@@ -8,6 +9,16 @@ class NetworkMonitorSettings(Document):
     def validate(self):
         self.validate_monitoring()
         self.validate_notifications()
+
+    def on_update(self):
+        if (
+            not self.is_new()
+            and self.has_value_changed("enabled")
+            and not self.enabled
+        ):
+            close_open_downtimes(
+                monitoring_down=True,
+            )
 
     # --------------------------------------------------
     # Monitoring

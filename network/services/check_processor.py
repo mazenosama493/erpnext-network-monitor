@@ -36,7 +36,17 @@ class CheckProcessor:
 
     def process(self, checks):
 
-        
+        # Read settings once
+        settings = frappe.get_single(
+            "Network Monitor Settings"
+        )
+
+        # Monitoring disabled
+        if not settings.enabled:
+            return {
+                "processed": 0,
+                "failed": 0
+            }
 
         # Process checks in chronological order
         checks.sort(
@@ -48,7 +58,10 @@ class CheckProcessor:
 
         for check in checks:
             try:
-                self.process_check(check)
+                self.process_check(
+                    check,
+                    settings
+                )
                 processed += 1
 
             except Exception:
@@ -68,7 +81,11 @@ class CheckProcessor:
     # Main Processing
     # --------------------------------------------------
 
-    def process_check(self, check):
+    def process_check(
+        self,
+        check,
+        settings
+    ):
 
         self.validate_check(check)
 
@@ -76,12 +93,17 @@ class CheckProcessor:
             check["device"]
         )
 
+        # Ignore stale results for disabled devices
+        if not device.enabled:
+            return
+
         old_status = device.status
         new_status = check["status"]
 
         # ---------------------------------------
         # Save Check History
         # ---------------------------------------
+
         self.create_network_check(
             device,
             check
@@ -116,7 +138,6 @@ class CheckProcessor:
             device,
             check
         )
-
 
     # --------------------------------------------------
     # Validation
