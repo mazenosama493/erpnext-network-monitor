@@ -81,21 +81,23 @@ class CheckProcessor:
     # Main Processing
     # --------------------------------------------------
 
-    def process_check(
-        self,
-        check,
-        settings
-    ):
+    def process_check(self, check, settings):
 
         self.validate_check(check)
 
-        device = self.get_device(
-            check["device"]
-        )
+        device = self.get_device(check["device"])
 
-        # Ignore stale results for disabled devices
+        # Ignore checks for disabled devices
         if not device.enabled:
             return
+
+        check_time = frappe.utils.get_datetime(check["check_time"])
+
+        if device.last_check:
+            last_check = frappe.utils.get_datetime(device.last_check)
+
+            if check_time <= last_check:
+                return
 
         old_status = device.status
         new_status = check["status"]
@@ -122,12 +124,15 @@ class CheckProcessor:
 
         elif new_status == "Online":
 
-            if old_status == "Offline" or frappe.db.exists(
-                "Network Downtime",
-                {
-                    "device": device.name,
-                    "status": "Open",
-                },
+            if (
+                old_status == "Offline"
+                or frappe.db.exists(
+                    "Network Downtime",
+                    {
+                        "device": device.name,
+                        "status": "Open",
+                    },
+                )
             ):
 
                 self.handle_device_recovered(
@@ -182,20 +187,30 @@ class CheckProcessor:
         old_status = device.status
         new_status = check["status"]
 
+        check_time = frappe.utils.get_datetime(
+            check["check_time"]
+        )
+
         # Update current status
         device.status = new_status
-        device.last_check = check["check_time"]
-        device.response_time = check.get("avg_response_time")
+
+        device.last_check = check_time
+
+        device.response_time = check.get(
+            "avg_response_time"
+        )
 
         # Last seen only when device is online
         if new_status == "Online":
-            device.last_seen = check["check_time"]
+            device.last_seen = check_time
 
         # Update last state change ONLY if status changed
         if old_status != new_status:
-            device.last_state_change = check["check_time"]
+            device.last_state_change = check_time
 
-        device.save(ignore_permissions=True)
+        device.save(
+            ignore_permissions=True
+        )
 
 
     # --------------------------------------------------
