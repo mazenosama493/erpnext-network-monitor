@@ -120,15 +120,20 @@ class CheckProcessor:
                 check
             )
 
-        elif (
-            old_status == "Offline"
-            and new_status == "Online"
-        ):
+        elif new_status == "Online":
 
-            self.handle_device_recovered(
-                device,
-                check
-            )
+            if old_status == "Offline" or frappe.db.exists(
+                "Network Downtime",
+                {
+                    "device": device.name,
+                    "status": "Open",
+                },
+            ):
+
+                self.handle_device_recovered(
+                    device,
+                    check
+                )
 
         # ---------------------------------------
         # Update Current Device State
