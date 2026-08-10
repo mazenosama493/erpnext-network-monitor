@@ -24,6 +24,8 @@ class NetworkMonitorSettings(Document):
     # Monitoring
     # --------------------------------------------------
 
+    
+
     def validate_monitoring(self):
 
         if self.monitoring_interval_seconds <= 0:

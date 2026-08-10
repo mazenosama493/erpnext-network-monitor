@@ -84,6 +84,14 @@ doctype_list_js = {
     "Network Device": "public/js/network_device_list.js"
 }
 
+scheduler_events = {
+    "cron": {
+        "* * * * *": [
+            "network.tasks.monitoring_schedule.check_monitoring_schedule"
+        ]
+    }
+}
+
 
 
 # required_apps = []

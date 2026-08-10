@@ -6,6 +6,9 @@
  "field_order": [
   "monitoring_section",
   "enabled",
+  "enable_scheduled_monitoring",
+  "monitoring_start_time",
+  "monitoring_stop_time",
   "monitoring_interval_seconds",
   "ping_timeout",
   "max_workers",
@@ -139,13 +142,31 @@
    "label": "Offline Alert Delay (Minutes)",
    "non_negative": 1,
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_scheduled_monitoring",
+   "fieldtype": "Check",
+   "label": "Enable Scheduled Monitoring"
+  },
+  {
+   "depends_on": "eval:doc.enable_scheduled_monitoring",
+   "fieldname": "monitoring_start_time",
+   "fieldtype": "Time",
+   "label": "Monitoring Start Time"
+  },
+  {
+   "depends_on": "eval:doc.enable_scheduled_monitoring",
+   "fieldname": "monitoring_stop_time",
+   "fieldtype": "Time",
+   "label": "Monitoring Stop Time"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-02 13:39:15.332639",
+ "modified": "2026-08-10 09:00:36.743832",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Monitor Settings",
