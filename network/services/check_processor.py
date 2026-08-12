@@ -7,19 +7,28 @@ class CheckProcessor:
     def __init__(self):
         self.notification_service = NotificationService()
 
-    def should_send_offline_alert(
-        self,
-        downtime,
-        check
-    ):
+
+
+
+    def get_offline_alert_delay(self, device):
+
+        if device.override_notification_settings:
+            return device.offline_alert_delay or 0
 
         settings = frappe.get_single(
             "Network Monitor Settings"
         )
 
-        delay = (
-            settings.offline_alert_delay or 0
-        )
+        return settings.offline_alert_delay or 0
+
+    def should_send_offline_alert(
+        self,
+        downtime,
+        check,
+        device
+    ):
+
+        delay = self.get_offline_alert_delay(device)
 
         if downtime.alert_sent:
             return False
@@ -309,7 +318,8 @@ class CheckProcessor:
 
             if self.should_send_offline_alert(
                 downtime,
-                check
+                check,
+                device
             ):
 
                 self.create_alert(
@@ -336,7 +346,8 @@ class CheckProcessor:
 
         if self.should_send_offline_alert(
             downtime,
-            check
+            check,
+            device
         ):
 
             self.create_alert(
@@ -377,7 +388,7 @@ class CheckProcessor:
         )
 
         self.close_downtime(
-            device,
+            downtime,
             check
         )
 
@@ -447,45 +458,21 @@ class CheckProcessor:
 
 
 
-    def close_downtime(self, device, check):
-
-        name = frappe.db.get_value(
-            "Network Downtime",
-            {
-                "device": device.name,
-                "status": "Open"
-            },
-            "name"
-        )
-
-
-        if not name:
-            return
-
-
-        downtime = frappe.get_doc(
-            "Network Downtime",
-            name
-        )
-
+    def close_downtime(self, downtime, check):
 
         downtime.ended_at = check["check_time"]
-
 
         seconds = time_diff_in_seconds(
             downtime.ended_at,
             downtime.started_at
         )
 
-
         downtime.duration_minutes = round(
             seconds / 60,
             2
         )
 
-
         downtime.status = "Closed"
-
 
         downtime.save(
             ignore_permissions=True

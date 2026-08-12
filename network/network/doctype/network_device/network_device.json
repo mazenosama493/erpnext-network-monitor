@@ -28,6 +28,9 @@
   "retry_count",
   "retry_delay",
   "packets_per_check",
+  "override_notification_settings_section",
+  "override_notification_settings",
+  "offline_alert_delay",
   "alert_section",
   "critical_device",
   "notification_enabled",
@@ -251,12 +254,31 @@
    "fieldname": "external_device",
    "fieldtype": "Check",
    "label": "External Device"
+  },
+  {
+   "fieldname": "override_notification_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Override Notification Settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "override_notification_settings",
+   "fieldtype": "Check",
+   "label": "Override Notification Settings"
+  },
+  {
+   "depends_on": "eval:doc.override_notification_settings",
+   "fieldname": "offline_alert_delay",
+   "fieldtype": "Int",
+   "label": "Offline Alert Delay",
+   "mandatory_depends_on": "eval:doc.override_notification_settings",
+   "non_negative": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-01 09:00:55.925361",
+ "modified": "2026-08-12 10:29:00.892483",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Device",
