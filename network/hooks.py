@@ -85,6 +85,12 @@ doctype_list_js = {
 }
 
 scheduler_events = {
+
+    "cron": {
+        "0 0 * * *": [
+            "network.tasks.cleanup.delete_old_checks",
+        ],
+    },
     "cron": {
         "* * * * *": [
             "network.tasks.monitoring_schedule.check_monitoring_schedule"
