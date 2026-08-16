@@ -74,11 +74,11 @@ fixtures = [
 ]
 
 
-doc_events = {
-    "Notification Log": {
-        "after_insert": "network.events.notification.after_notification_insert"
-    }
-}
+# doc_events = {
+#     "Notification Log": {
+#         "after_insert": "network.events.notification.after_notification_insert"
+#     }
+# }
 
 doctype_list_js = {
     "Network Device": "public/js/network_device_list.js"
