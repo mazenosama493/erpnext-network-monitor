@@ -39,3 +39,6 @@ def close_open_downtimes(
             )
 
         doc.save(ignore_permissions=True)
+
+
+
