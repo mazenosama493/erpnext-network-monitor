@@ -118,7 +118,7 @@ def check_monitoring_schedule():
         close_open_downtimes(
             device_disabled=False,
         )
-        set_status_unkown()
+        set_status_unkown(reason="Monitoring")
 
     # ---------------------------------------
     # Update Monitoring Enabled
