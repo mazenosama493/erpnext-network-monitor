@@ -2,7 +2,7 @@ import frappe
 from frappe.utils import now_datetime
 
 from network.api.downtime import close_open_downtimes
-from network.api.unkown import set_status_unkown
+from network.api.unknown import set_status_unknown
 
 
 def check_monitoring_schedule():

@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from network.api.downtime import close_open_downtimes
-from network.api.unkown import set_status_unknown
+from network.api.unknown import set_status_unknown
 
 
 class NetworkMonitorSettings(Document):
