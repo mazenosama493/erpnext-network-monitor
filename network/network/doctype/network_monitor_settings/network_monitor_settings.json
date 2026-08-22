@@ -9,6 +9,7 @@
   "enable_scheduled_monitoring",
   "monitoring_start_time",
   "monitoring_stop_time",
+  "weekly_off_days",
   "monitoring_interval_seconds",
   "ping_timeout",
   "max_workers",
@@ -167,13 +168,20 @@
    "fieldname": "check_retention_days",
    "fieldtype": "Int",
    "label": "Check Retention (Days)"
+  },
+  {
+   "depends_on": "eval:doc.enable_scheduled_monitoring",
+   "fieldname": "weekly_off_days",
+   "fieldtype": "Table",
+   "label": "Weekly Off Days",
+   "options": "Weekly Off Day"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-13 10:03:25.216969",
+ "modified": "2026-08-22 10:13:59.317197",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Monitor Settings",

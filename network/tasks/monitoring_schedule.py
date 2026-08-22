@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import now_datetime
+from frappe.utils import now_datetime, today, getdate
 
 from network.api.downtime import close_open_downtimes
 from network.api.unknown import set_status_unknown
@@ -24,6 +24,23 @@ def check_monitoring_schedule():
     # ---------------------------------------
     if not settings.enable_scheduled_monitoring:
         return
+
+
+    # =======================================
+    # HOLIDAYS
+    # =======================================    
+    current_date = today()
+    day_name = getdate(current_date).strftime("%A")
+    is_holiday = False
+
+
+    weekly_off_days = [row.day for row in settings.get("weekly_off_days", [])]
+    if day_name in weekly_off_days:
+        is_holiday = True
+        frappe.log_error(title="Monitoring Schedule", message=f"Today is a weekly off: {day_name}")
+    # =======================================
+    # HOLIDAYS
+    # =======================================
 
     start_time = settings.monitoring_start_time
     stop_time = settings.monitoring_stop_time
@@ -68,25 +85,23 @@ def check_monitoring_schedule():
     # ---------------------------------------
     # Determine monitoring state
     # ---------------------------------------
-
-    # Normal schedule
-    # Example: 08:00 -> 22:00
-    if start_minutes < stop_minutes:
-
-        should_monitor = (
-            start_minutes
-            <= current_minutes
-            < stop_minutes
-        )
-
-    # Overnight schedule
-    # Example: 22:00 -> 08:00
+    
+    if is_holiday:
+        should_monitor = False
     else:
-
-        should_monitor = (
-            current_minutes >= start_minutes
-            or current_minutes < stop_minutes
-        )
+        if start_minutes < stop_minutes:
+            should_monitor = (
+                start_minutes
+                <= current_minutes
+                < stop_minutes
+            )
+        # Overnight schedule
+        # Example: 22:00 -> 08:00
+        else:
+            should_monitor = (
+                current_minutes >= start_minutes
+                or current_minutes < stop_minutes
+            )
 
     new_enabled = 1 if should_monitor else 0
 
@@ -99,6 +114,7 @@ def check_monitoring_schedule():
             f"Current Time: {current_time}\n"
             f"Start Time: {start_time}\n"
             f"Stop Time: {stop_time}\n"
+            f"Is Holiday: {is_holiday}\n"  # ضفناها في الـ Debug
             f"Current Enabled: {settings.enabled}\n"
             f"New Enabled: {new_enabled}"
         ),
@@ -114,11 +130,10 @@ def check_monitoring_schedule():
     # Monitoring is being stopped
     # ---------------------------------------
     if not new_enabled:
-
         close_open_downtimes(
             device_disabled=False,
         )
-        set_status_unkown(reason="Monitoring")
+        set_status_unknown(reason="Monitoring Schedule or Holiday") # عدلنا الرسالة عشان تكون أدق
 
     # ---------------------------------------
     # Update Monitoring Enabled
