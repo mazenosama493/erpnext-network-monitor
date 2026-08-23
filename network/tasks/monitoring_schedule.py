@@ -133,7 +133,7 @@ def check_monitoring_schedule():
         close_open_downtimes(
             device_disabled=False,
         )
-        set_status_unknown(reason="Monitoring Schedule or Holiday") # عدلنا الرسالة عشان تكون أدق
+        set_status_unknown(reason="Monitoring")  
 
     # ---------------------------------------
     # Update Monitoring Enabled
