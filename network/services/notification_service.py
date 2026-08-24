@@ -88,7 +88,7 @@ class NotificationService:
                 "email_content": (
                     f"{device.device_name} is {alert.alert_type}"
                 ),
-                "from_user": "Administrator",
+                "from_user": "networkmonitoring",
                 "creation": alert.alert_time,
             },
         )

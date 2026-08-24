@@ -114,7 +114,7 @@ def check_monitoring_schedule():
             f"Current Time: {current_time}\n"
             f"Start Time: {start_time}\n"
             f"Stop Time: {stop_time}\n"
-            f"Is Holiday: {is_holiday}\n"  # ضفناها في الـ Debug
+            f"Is Holiday: {is_holiday}\n"
             f"Current Enabled: {settings.enabled}\n"
             f"New Enabled: {new_enabled}"
         ),
@@ -131,7 +131,7 @@ def check_monitoring_schedule():
     # ---------------------------------------
     if not new_enabled:
         close_open_downtimes(
-            device_disabled=False,
+            monitoring_down=True,
         )
         set_status_unknown(reason="Monitoring")  
 
