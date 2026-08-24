@@ -88,7 +88,7 @@ class NotificationService:
                 "email_content": (
                     f"{device.device_name} is {alert.alert_type}"
                 ),
-                "from_user": "networkmonitoring",
+                "from_user": "networkmonitoring@velocity.com",
                 "creation": alert.alert_time,
             },
         )
