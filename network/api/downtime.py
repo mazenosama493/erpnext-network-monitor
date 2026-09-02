@@ -2,6 +2,12 @@ import frappe
 from frappe.utils import now_datetime
 
 
+import time
+
+import frappe
+from frappe.utils import now_datetime
+
+
 def close_open_downtimes(
     device=None,
     device_disabled=False,
@@ -19,26 +25,54 @@ def close_open_downtimes(
     downtimes = frappe.get_all(
         "Network Downtime",
         filters=filters,
-        pluck="name",
+        fields=["name", "started_at"],
     )
 
-    for name in downtimes:
-        doc = frappe.get_doc("Network Downtime", name)
+    for downtime in downtimes:
+        duration_minutes = None
 
-        doc.status = "Closed"
-        doc.ended_at = now
-
-        # Mark why this downtime was closed
-        doc.device_disabled = 1 if device_disabled else 0
-        doc.monitoring_down = 1 if monitoring_down else 0
-
-        if doc.started_at:
-            doc.duration_minutes = round(
-                (now - doc.started_at).total_seconds() / 60,
+        if downtime.started_at:
+            duration_minutes = round(
+                (now - downtime.started_at).total_seconds() / 60,
                 2,
             )
 
-        doc.save(ignore_permissions=True)
+        values = (
+            now,
+            1 if device_disabled else 0,
+            1 if monitoring_down else 0,
+            duration_minutes,
+            now,
+            frappe.session.user,
+            downtime.name,
+        )
 
+        # Retry transient deadlocks
+        for attempt in range(3):
+            try:
+                frappe.db.sql(
+                    """
+                    UPDATE `tabNetwork Downtime`
+                    SET
+                        status = 'Closed',
+                        ended_at = %s,
+                        device_disabled = %s,
+                        monitoring_down = %s,
+                        duration_minutes = %s,
+                        modified = %s,
+                        modified_by = %s
+                    WHERE name = %s
+                      AND status = 'Open'
+                    """,
+                    values,
+                )
+
+                break
+
+            except frappe.QueryDeadlockError:
+                if attempt == 2:
+                    raise
+
+                time.sleep(0.1 * (attempt + 1))
 
 
