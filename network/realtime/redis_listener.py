@@ -3,8 +3,8 @@ import redis
 import frappe
 
 
-REDIS_HOST = "redis-cache"
-REDIS_PORT = 6379
+REDIS_HOST = "192.168.3.101"
+REDIS_PORT = 13000
 
 CHANNEL = "network_agent_updates"
 
