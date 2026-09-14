@@ -2,7 +2,7 @@ import frappe
 import json
 import redis
 
-REDIS_HOST = "127.0.0.1"
+REDIS_HOST = "192.168.3.101"
 REDIS_PORT = 13000
 CHANNEL = "network_agent_updates"
 
