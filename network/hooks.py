@@ -5,6 +5,8 @@ app_description = "m"
 app_email = "volt@gmail.com"
 app_license = "mit"
 
+commands = ["network.commands"]
+
 # Apps
 # ------------------
 
@@ -43,7 +45,8 @@ fixtures = [
                 [
                     "Network Manager",
                     "Network Operator",
-                    "Network Monitor"
+                    "Network Monitor",
+                    "Network Agent"
                 ]
             ]
         ]
@@ -57,7 +60,8 @@ fixtures = [
                 [
                     "Network Manager",
                     "Network Operator",
-                    "Network Monitor"
+                    "Network Monitor",
+                    "Network Agent"
                 ]
             ]
         ]

@@ -1,0 +1,172 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "creation": "2026-09-09 08:27:05.523172",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "intervals_section",
+  "downtime_delay",
+  "gateway_interval",
+  "internet_interval",
+  "dns_interval",
+  "tcp_interval",
+  "traffic_interval",
+  "interface_interval",
+  "sync_interval",
+  "network_targets_section",
+  "internet_target",
+  "dns_test_domain",
+  "tcp_test_host",
+  "tcp_test_port",
+  "ping_settings_section",
+  "ping_timeout_ms",
+  "ping_count"
+ ],
+ "fields": [
+  {
+   "fieldname": "intervals_section",
+   "fieldtype": "Section Break",
+   "label": "Intervals"
+  },
+  {
+   "default": "1",
+   "fieldname": "gateway_interval",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Gateway Interval",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "internet_interval",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Internet Interval",
+   "reqd": 1
+  },
+  {
+   "default": "1.0",
+   "fieldname": "dns_interval",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "DNS Interval",
+   "reqd": 1
+  },
+  {
+   "default": "1.0",
+   "fieldname": "tcp_interval",
+   "fieldtype": "Float",
+   "label": "TCP Interval"
+  },
+  {
+   "default": "1.0",
+   "fieldname": "traffic_interval",
+   "fieldtype": "Float",
+   "label": "Traffic Interval",
+   "reqd": 1
+  },
+  {
+   "default": "1.0",
+   "fieldname": "interface_interval",
+   "fieldtype": "Float",
+   "label": "Interface Interval",
+   "reqd": 1
+  },
+  {
+   "default": "1.0",
+   "fieldname": "sync_interval",
+   "fieldtype": "Float",
+   "label": "Sync Interval",
+   "reqd": 1
+  },
+  {
+   "fieldname": "network_targets_section",
+   "fieldtype": "Section Break",
+   "label": "Network Targets"
+  },
+  {
+   "default": "1.1.1.1",
+   "fieldname": "internet_target",
+   "fieldtype": "Data",
+   "label": "Internet Target",
+   "reqd": 1
+  },
+  {
+   "default": "google.com",
+   "fieldname": "dns_test_domain",
+   "fieldtype": "Data",
+   "label": "DNS Test Domain",
+   "reqd": 1
+  },
+  {
+   "default": "1.1.1.1",
+   "fieldname": "tcp_test_host",
+   "fieldtype": "Data",
+   "label": "TCP Test Host",
+   "reqd": 1
+  },
+  {
+   "default": "443",
+   "fieldname": "tcp_test_port",
+   "fieldtype": "Int",
+   "label": "TCP Test Port",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "ping_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Ping Settings"
+  },
+  {
+   "default": "1000",
+   "fieldname": "ping_timeout_ms",
+   "fieldtype": "Int",
+   "label": "Ping Timeout MS",
+   "reqd": 1
+  },
+  {
+   "default": "3",
+   "fieldname": "ping_count",
+   "fieldtype": "Int",
+   "label": "Ping Count",
+   "reqd": 1
+  },
+  {
+   "default": "3.0",
+   "fieldname": "downtime_delay",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Downtime Delay",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-12 16:03:59.250595",
+ "modified_by": "Administrator",
+ "module": "Network",
+ "name": "Network Agent Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

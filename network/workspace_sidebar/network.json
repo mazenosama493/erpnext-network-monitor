@@ -1,6 +1,6 @@
 {
  "app": "network",
- "creation": "2026-08-13 10:15:30.125442",
+ "creation": "2026-09-14 09:51:30.858587",
  "docstatus": 0,
  "doctype": "Workspace Sidebar",
  "header_icon": "network",
@@ -148,9 +148,69 @@
    "link_type": "DocType",
    "show_arrow": 0,
    "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "fullscreen",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Live Network Pcs",
+   "link_to": "network-dashboard",
+   "link_type": "Page",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "computer",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Pcs",
+   "link_to": "PCs",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "house",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Pcs Departments",
+   "link_to": "PCs Departments",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "logs",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Pcs Downtime Logs",
+   "link_to": "Device Downtime Log",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "setting-gear",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Network Agent Settings",
+   "link_to": "Network Agent Settings",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-09-01 09:15:05.223716",
+ "modified": "2026-09-14 10:39:13.051828",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network",
