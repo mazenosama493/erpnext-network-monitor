@@ -129,37 +129,66 @@ def resolve_downtime(
             metrics,
         )
 
+        resolved_count = 0
+
         for log in open_logs:
+
             doc = frappe.get_doc(
                 "Device Downtime Log",
                 log.name,
             )
 
-            doc.status = "Resolved"
-            doc.end_time = end_time
+            # Check if another request already resolved this log.
+            current_status = frappe.db.get_value(
+                "Device Downtime Log",
+                doc.name,
+                "status",
+            )
+
+            if current_status != "Open":
+                continue
+
+            total_seconds = None
+
+            if doc.start_time:
+                # Cast the total seconds to an integer to satisfy Frappe's Duration field requirements
+                total_seconds = int(time_diff_in_seconds(
+                    end_time,
+                    doc.start_time,
+                ))
+
+                # Prevent negative duration.
+                if total_seconds < 0:
+                    total_seconds = 0
+
+            update_values = {
+                "status": "Resolved",
+                "end_time": end_time,
+                "duration": total_seconds,
+            }
 
             if metrics is not None:
-                doc.resolution_metrics_snapshot = frappe.as_json(
-                    metrics
+                update_values["resolution_metrics_snapshot"] = (
+                    frappe.as_json(metrics)
                 )
 
-            if doc.start_time and doc.end_time:
-                total_seconds = time_diff_in_seconds(
-                    doc.end_time,
-                    doc.start_time,
-                )
+            # Direct DB update.
+            # Avoids Frappe's check_if_latest() conflict
+            # caused by concurrent requests.
+            frappe.db.set_value(
+                "Device Downtime Log",
+                doc.name,
+                update_values,
+                update_modified=True,
+            )
 
-                # Frappe Duration fields expect the duration
-                # to be stored as a number of seconds.
-                doc.duration = total_seconds
-
-            doc.save(ignore_permissions=True)
+            resolved_count += 1
 
         frappe.db.commit()
 
         return {
             "status": "success",
-            "resolved_count": len(open_logs),
+            "resolved_count": resolved_count,
         }
 
     except Exception as e:
