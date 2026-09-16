@@ -4,7 +4,6 @@ from frappe.utils import (
     get_datetime,
     now,
     time_diff_in_seconds,
-    format_duration,
 )
 import json
 
@@ -147,9 +146,9 @@ def resolve_downtime(
                     doc.start_time,
                 )
 
-                doc.duration = format_duration(
-                    total_seconds
-                )
+                # Frappe Duration fields expect the duration
+                # to be stored as a number of seconds.
+                doc.duration = total_seconds
 
             doc.save(ignore_permissions=True)
 
