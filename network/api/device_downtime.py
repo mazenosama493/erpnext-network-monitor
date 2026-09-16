@@ -6,6 +6,7 @@ from frappe.utils import (
     time_diff_in_seconds,
 )
 import json
+from zoneinfo import ZoneInfo
 
 
 def _get_event_time(event_time, metrics=None):
@@ -20,12 +21,14 @@ def _get_event_time(event_time, metrics=None):
 
     parsed_time = get_datetime(event_time)
 
-    # Agent sends UTC with "Z".
-    # Normalize timezone-aware values to UTC.
+    # Agent sends UTC timestamps.
+    # Convert UTC to Egypt local time before storing
+    # in MySQL DATETIME.
     if parsed_time.tzinfo:
-        parsed_time = parsed_time.astimezone(timezone.utc)
+        egypt_timezone = ZoneInfo("Africa/Cairo")
+        parsed_time = parsed_time.astimezone(egypt_timezone)
 
-        # MySQL DATETIME does not accept timezone information.
+        # MySQL DATETIME does not store timezone information.
         parsed_time = parsed_time.replace(tzinfo=None)
 
     return parsed_time
