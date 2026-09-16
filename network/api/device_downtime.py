@@ -5,30 +5,29 @@ from frappe.utils import (
     now,
     time_diff_in_seconds,
     format_duration,
-    convert_utc_to_system_timezone,
 )
 import json
 
 
 def _get_event_time(event_time, metrics=None):
 
-    # If event_time was not passed directly, try to get it from metrics
+    # If event_time was not passed directly, get it from metrics.
     if not event_time and isinstance(metrics, dict):
         event_time = metrics.get("event_time")
 
-    # If there is still no event_time, use the current Frappe time
+    # No event_time supplied -> use current Frappe time.
     if not event_time:
         return get_datetime(now())
 
     parsed_time = get_datetime(event_time)
 
-    # If the incoming datetime contains timezone information,
-    # normalize it to UTC first.
+    # Agent sends UTC with "Z".
+    # Normalize timezone-aware values to UTC.
     if parsed_time.tzinfo:
         parsed_time = parsed_time.astimezone(timezone.utc)
 
-        # Convert UTC to the Frappe system timezone.
-        parsed_time = convert_utc_to_system_timezone(parsed_time)
+        # MySQL DATETIME does not accept timezone information.
+        parsed_time = parsed_time.replace(tzinfo=None)
 
     return parsed_time
 
@@ -41,7 +40,13 @@ def _parse_metrics(metrics):
 
 
 @frappe.whitelist(methods=["POST"], allow_guest=False)
-def start_downtime(device_id, issue_type, reason, metrics, event_time=None):
+def start_downtime(
+    device_id,
+    issue_type,
+    reason,
+    metrics,
+    event_time=None,
+):
     try:
         metrics = _parse_metrics(metrics)
 
@@ -101,7 +106,11 @@ def start_downtime(device_id, issue_type, reason, metrics, event_time=None):
 
 
 @frappe.whitelist(methods=["POST"], allow_guest=False)
-def resolve_downtime(device_id, metrics=None, event_time=None):
+def resolve_downtime(
+    device_id,
+    metrics=None,
+    event_time=None,
+):
     try:
         open_logs = frappe.get_all(
             "Device Downtime Log",
@@ -132,14 +141,12 @@ def resolve_downtime(device_id, metrics=None, event_time=None):
                     metrics
                 )
 
-            # Calculate duration using the actual event times.
             if doc.start_time and doc.end_time:
                 total_seconds = time_diff_in_seconds(
                     doc.end_time,
                     doc.start_time,
                 )
 
-                # Duration field expects a formatted duration.
                 doc.duration = format_duration(
                     total_seconds
                 )
