@@ -42,39 +42,31 @@ def start_downtime(
 ):
     try:
         metrics = _parse_metrics(metrics)
+        start_time = _get_event_time(event_time, metrics)
 
         open_logs = frappe.get_all(
             "Device Downtime Log",
-            filters={
-                "device_id": device_id,
-                "status": "Open",
-            },
+            filters={"device_id": device_id, "status": "Open"},
             limit=1,
         )
 
         if open_logs:
-            return {
-                "status": "ignored",
-                "message": "Downtime already open",
-            }
+            return update_downtime(device_id, issue_type, reason, metrics, event_time)
 
-        start_time = _get_event_time(
-            event_time,
-            metrics,
-        )
-
+        # استخدام timeline_events المتطابق مع ملف الـ JSON الخاص بك
         doc = frappe.get_doc({
             "doctype": "Device Downtime Log",
             "device_id": device_id,
             "status": "Open",
-            "issue_type": issue_type,
-            "reason": reason,
             "start_time": start_time,
-            "metrics_snapshot": (
-                frappe.as_json(metrics)
-                if isinstance(metrics, dict)
-                else metrics
-            ),
+            "metrics_snapshot": frappe.as_json(metrics) if isinstance(metrics, dict) else metrics,
+            "timeline_events": [
+                {
+                    "issue_type": issue_type,
+                    "reason": reason,
+                    "event_start": start_time
+                }
+            ]
         })
 
         doc.insert(ignore_permissions=True)
@@ -87,14 +79,66 @@ def start_downtime(
         }
 
     except Exception as e:
-        frappe.log_error(
-            frappe.get_traceback(),
-            "Downtime API - Start Failed",
+        frappe.log_error(frappe.get_traceback(), "Downtime API - Start Failed")
+        return {"status": "failed", "message": str(e)}
+
+
+@frappe.whitelist(methods=["POST"], allow_guest=False)
+def update_downtime(
+    device_id,
+    issue_type,
+    reason,
+    metrics=None,
+    event_time=None,
+):
+    try:
+        metrics = _parse_metrics(metrics)
+        current_time = _get_event_time(event_time, metrics)
+
+        open_logs = frappe.get_all(
+            "Device Downtime Log",
+            filters={"device_id": device_id, "status": "Open"},
+            limit=1,
         )
+
+        if not open_logs:
+            return start_downtime(device_id, issue_type, reason, metrics, event_time)
+
+        doc = frappe.get_doc("Device Downtime Log", open_logs[0].name)
+        
+        # البحث في timeline_events عن آخر حدث مفتوح (الذي ملوش event_end)
+        active_event = None
+        for ev in doc.timeline_events:
+            if not ev.event_end:
+                active_event = ev
+                break
+
+        if active_event and active_event.issue_type == issue_type and active_event.reason == reason:
+            return {"status": "ignored", "message": "Event unchanged"}
+
+        if active_event:
+            active_event.event_end = current_time
+
+        doc.append("timeline_events", {
+            "issue_type": issue_type,
+            "reason": reason,
+            "event_start": current_time
+        })
+
+        if metrics:
+            doc.metrics_snapshot = frappe.as_json(metrics)
+
+        doc.save(ignore_permissions=True)
+        frappe.db.commit()
+
         return {
-            "status": "failed",
-            "message": str(e),
+            "status": "success",
+            "message": f"Timeline updated with new event: {issue_type}",
         }
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Downtime API - Update Failed")
+        return {"status": "failed", "message": str(e)}
 
 
 @frappe.whitelist(methods=["POST"], allow_guest=False)
@@ -106,10 +150,7 @@ def resolve_downtime(
     try:
         open_logs = frappe.get_all(
             "Device Downtime Log",
-            filters={
-                "device_id": device_id,
-                "status": "Open",
-            },
+            filters={"device_id": device_id, "status": "Open"},
         )
 
         metrics = _parse_metrics(metrics)
@@ -118,10 +159,11 @@ def resolve_downtime(
 
         for log in open_logs:
             doc = frappe.get_doc("Device Downtime Log", log.name)
-            current_status = frappe.db.get_value("Device Downtime Log", doc.name, "status")
-
-            if current_status != "Open":
-                continue
+            
+            # إغلاق أي حدث مفتوح في timeline_events
+            for ev in doc.timeline_events:
+                if not ev.event_end:
+                    ev.event_end = end_time
 
             total_seconds = None
             if doc.start_time:
@@ -129,22 +171,14 @@ def resolve_downtime(
                 if total_seconds < 0:
                     total_seconds = 0
 
-            update_values = {
-                "status": "Resolved",
-                "end_time": end_time,
-                "duration": total_seconds,
-            }
+            doc.status = "Resolved"
+            doc.end_time = end_time
+            doc.duration = total_seconds
 
             if metrics is not None:
-                update_values["resolution_metrics_snapshot"] = frappe.as_json(metrics)
+                doc.resolution_metrics_snapshot = frappe.as_json(metrics)
 
-            frappe.db.set_value(
-                "Device Downtime Log",
-                doc.name,
-                update_values,
-                update_modified=True,
-            )
-
+            doc.save(ignore_permissions=True)
             resolved_count += 1
 
         frappe.db.commit()
@@ -158,60 +192,4 @@ def resolve_downtime(
             frappe.get_traceback(),
             "Downtime API - Resolve Failed",
         )
-        return {
-            "status": "failed",
-            "message": str(e),
-        }
-
-
-@frappe.whitelist(methods=["POST"], allow_guest=False)
-def update_downtime(
-    device_id,
-    issue_type,
-    reason,
-    metrics=None,
-    event_time=None,
-):
-    try:
-        open_logs = frappe.get_all(
-            "Device Downtime Log",
-            filters={
-                "device_id": device_id,
-                "status": "Open",
-            },
-            limit=1,
-        )
-
-        if not open_logs:
-            return {
-                "status": "ignored",
-                "message": "No open downtime found to update",
-            }
-
-        doc = frappe.get_doc("Device Downtime Log", open_logs[0].name)
-        
-        if doc.issue_type != issue_type or doc.reason != reason:
-            doc.issue_type = issue_type
-            doc.reason = reason
-            
-            if metrics:
-                metrics_parsed = _parse_metrics(metrics)
-                doc.metrics_snapshot = (
-                    frappe.as_json(metrics_parsed)
-                    if isinstance(metrics_parsed, dict)
-                    else metrics_parsed
-                )
-            
-            doc.save(ignore_permissions=True)
-            frappe.db.commit()
-            
-            return {
-                "status": "success",
-                "message": f"Downtime updated to {issue_type} - {reason}",
-            }
-            
-        return {"status": "ignored", "message": "Issue type and reason unchanged"}
-
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Downtime API - Update Failed")
         return {"status": "failed", "message": str(e)}
