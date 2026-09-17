@@ -1,3 +1,4 @@
+import time
 import frappe
 from frappe.utils import time_diff_in_seconds
 from network.services.notification_service import NotificationService
@@ -7,27 +8,16 @@ class CheckProcessor:
     def __init__(self):
         self.notification_service = NotificationService()
 
-
-
-
     def get_offline_alert_delay(self, device):
-
         if device.override_notification_settings:
             return device.offline_alert_delay or 0
 
         settings = frappe.get_single(
             "Network Monitor Settings"
         )
-
         return settings.offline_alert_delay or 0
 
-    def should_send_offline_alert(
-        self,
-        downtime,
-        check,
-        device
-    ):
-
+    def should_send_offline_alert(self, downtime, check, device):
         delay = self.get_offline_alert_delay(device)
 
         if downtime.alert_sent:
@@ -44,7 +34,6 @@ class CheckProcessor:
         return seconds >= (delay * 60)
 
     def process(self, checks):
-
         # Read settings once
         settings = frappe.get_single(
             "Network Monitor Settings"
@@ -85,15 +74,12 @@ class CheckProcessor:
             "failed": failed
         }
 
-
     # --------------------------------------------------
     # Main Processing
     # --------------------------------------------------
 
     def process_check(self, check, settings):
-
         self.validate_check(check)
-
         device = self.get_device(check["device"])
 
         # Ignore checks for disabled devices
@@ -104,7 +90,6 @@ class CheckProcessor:
 
         if device.last_check:
             last_check = frappe.utils.get_datetime(device.last_check)
-
             if check_time <= last_check:
                 return
 
@@ -114,7 +99,6 @@ class CheckProcessor:
         # ---------------------------------------
         # Save Check History
         # ---------------------------------------
-
         self.create_network_check(
             device,
             check
@@ -123,16 +107,13 @@ class CheckProcessor:
         # ---------------------------------------
         # Handle State Changes
         # ---------------------------------------
-
         if new_status == "Offline":
-
             self.handle_device_down(
                 device,
                 check
             )
 
         elif new_status == "Online":
-
             if (
                 old_status == "Offline"
                 or frappe.db.exists(
@@ -143,7 +124,6 @@ class CheckProcessor:
                     },
                 )
             ):
-
                 self.handle_device_recovered(
                     device,
                     check
@@ -152,7 +132,6 @@ class CheckProcessor:
         # ---------------------------------------
         # Update Current Device State
         # ---------------------------------------
-
         self.update_device(
             device,
             check
@@ -163,7 +142,6 @@ class CheckProcessor:
     # --------------------------------------------------
 
     def validate_check(self, check):
-
         required = [
             "device",
             "status",
@@ -172,133 +150,88 @@ class CheckProcessor:
         ]
 
         for field in required:
-
             if field not in check:
                 raise Exception(
                     f"Missing field: {field}"
                 )
-
 
     # --------------------------------------------------
     # Device
     # --------------------------------------------------
 
     def get_device(self, device_name):
-
         return frappe.get_doc(
             "Network Device",
             device_name
         )
 
-
     def update_device(self, device, check):
-
         old_status = device.status
         new_status = check["status"]
+        check_time = frappe.utils.get_datetime(check["check_time"])
 
-        check_time = frappe.utils.get_datetime(
-            check["check_time"]
-        )
+        values = {
+            "status": new_status,
+            "last_check": check_time,
+            "response_time": check.get("avg_response_time"),
+        }
 
-        # Update current status
-        device.status = new_status
-
-        device.last_check = check_time
-
-        device.response_time = check.get(
-            "avg_response_time"
-        )
-
-        # Last seen only when device is online
         if new_status == "Online":
-            device.last_seen = check_time
+            values["last_seen"] = check_time
 
-        # Update last state change ONLY if status changed
         if old_status != new_status:
-            device.last_state_change = check_time
+            values["last_state_change"] = check_time
 
-        device.save(
-            ignore_permissions=True
-        )
-
+        # Execute with retry logic for deadlocks
+        for attempt in range(3):
+            try:
+                frappe.db.set_value("Network Device", device.name, values, update_modified=False)
+                frappe.db.commit()
+                break
+            except frappe.QueryDeadlockError:
+                frappe.db.rollback()
+                if attempt == 2:
+                    raise
+                time.sleep(0.1 * (attempt + 1))
 
     # --------------------------------------------------
     # Network Check
     # --------------------------------------------------
 
     def create_network_check(self, device, check):
-
-        doc = frappe.new_doc(
-            "Network Check"
-        )
+        doc = frappe.new_doc("Network Check")
 
         doc.device = device.name
-
         doc.device_type = device.device_type
+        doc.check_time = check.get("check_time")
+        doc.status = check.get("status")
+        doc.avg_response_time = check.get("avg_response_time")
+        doc.min_response_time = check.get("min_response_time")
+        doc.max_response_time = check.get("max_response_time")
+        doc.jitter = check.get("jitter")
+        doc.packet_loss = check.get("packet_loss", 0)
+        doc.packets_sent = check.get("packets_sent", 0)
+        doc.packets_received = check.get("packets_received", 0)
+        doc.error_message = check.get("error_message")
+        doc.worker = check.get("worker")
+        doc.execution_time = check.get("execution_time")
 
-        doc.check_time = check.get(
-            "check_time"
-        )
-
-        doc.status = check.get(
-            "status"
-        )
-
-        doc.avg_response_time = check.get(
-            "avg_response_time"
-        )
-
-        doc.min_response_time = check.get(
-            "min_response_time"
-        )
-
-        doc.max_response_time = check.get(
-            "max_response_time"
-        )
-
-        doc.jitter = check.get(
-            "jitter"
-        )
-
-        doc.packet_loss = check.get(
-            "packet_loss",
-            0
-        )
-
-        doc.packets_sent = check.get(
-            "packets_sent",
-            0
-        )
-
-        doc.packets_received = check.get(
-            "packets_received",
-            0
-        )
-
-        doc.error_message = check.get(
-            "error_message"
-        )
-
-        doc.worker = check.get(
-            "worker"
-        )
-
-        doc.execution_time = check.get(
-            "execution_time"
-        )
-
-
-        doc.insert(
-            ignore_permissions=True
-        )
-
+        for attempt in range(3):
+            try:
+                doc.insert(ignore_permissions=True)
+                frappe.db.commit()
+                break
+            except frappe.QueryDeadlockError:
+                frappe.db.rollback()
+                if attempt == 2:
+                    raise
+                time.sleep(0.1 * (attempt + 1))
 
     # --------------------------------------------------
     # Device Down
     # --------------------------------------------------
 
     def handle_device_down(self, device, check):
-
         downtime_name = frappe.db.exists(
             "Network Downtime",
             {
@@ -311,66 +244,50 @@ class CheckProcessor:
         # Existing Downtime
         # ---------------------------------------
         if downtime_name:
+            downtime = self.increment_downtime_checks(downtime_name)
 
-            downtime = self.increment_downtime_checks(
-                downtime_name
-            )
+            if self.should_send_offline_alert(downtime, check, device):
+                self.create_alert(device, downtime, check)
 
-            if self.should_send_offline_alert(
-                downtime,
-                check,
-                device
-            ):
-
-                self.create_alert(
-                    device,
-                    downtime,
-                    check
-                )
-
-                downtime.alert_sent = 1
-
-                downtime.save(
-                    ignore_permissions=True
-                )
+                # Atomically update alert_sent with retry logic
+                for attempt in range(3):
+                    try:
+                        frappe.db.set_value("Network Downtime", downtime.name, "alert_sent", 1)
+                        frappe.db.commit()
+                        break
+                    except frappe.QueryDeadlockError:
+                        frappe.db.rollback()
+                        if attempt == 2:
+                            raise
+                        time.sleep(0.1 * (attempt + 1))
 
             return
 
         # ---------------------------------------
         # First Failure
         # ---------------------------------------
-        downtime = self.create_downtime(
-            device,
-            check
-        )
+        downtime = self.create_downtime(device, check)
 
-        if self.should_send_offline_alert(
-            downtime,
-            check,
-            device
-        ):
+        if self.should_send_offline_alert(downtime, check, device):
+            self.create_alert(device, downtime, check)
 
-            self.create_alert(
-                device,
-                downtime,
-                check
-            )
+            # Atomically update alert_sent with retry logic
+            for attempt in range(3):
+                try:
+                    frappe.db.set_value("Network Downtime", downtime.name, "alert_sent", 1)
+                    frappe.db.commit()
+                    break
+                except frappe.QueryDeadlockError:
+                    frappe.db.rollback()
+                    if attempt == 2:
+                        raise
+                    time.sleep(0.1 * (attempt + 1))
 
-            downtime.alert_sent = 1
-
-            downtime.save(
-                ignore_permissions=True
-            )
     # --------------------------------------------------
     # Device Recovery
     # --------------------------------------------------
 
-    def handle_device_recovered(
-        self,
-        device,
-        check
-    ):
-
+    def handle_device_recovered(self, device, check):
         downtime_name = frappe.db.exists(
             "Network Downtime",
             {
@@ -393,106 +310,89 @@ class CheckProcessor:
         )
 
         if downtime.alert_sent:
-
             self.create_recovery_alert(
                 device,
                 downtime,
                 check
             )
+
     # --------------------------------------------------
     # Downtime
     # --------------------------------------------------
 
     def create_downtime(self, device, check):
-
-        doc = frappe.new_doc(
-            "Network Downtime"
-        )
-
+        doc = frappe.new_doc("Network Downtime")
+        
         doc.device = device.name
-
         doc.started_at = check["check_time"]
-
         doc.status = "Open"
-
-        doc.reason = (
-            check.get("failure_reason")
-            or "Unknown"
-        )
-
+        doc.reason = check.get("failure_reason") or "Unknown"
         doc.number_of_checks = 1
-
         doc.alert_sent = 0
+        doc.average_response_before_failure = device.response_time
 
-        doc.average_response_before_failure = (
-            device.response_time
-        )
-
-        doc.insert(
-            ignore_permissions=True
-        )
+        for attempt in range(3):
+            try:
+                doc.insert(ignore_permissions=True)
+                frappe.db.commit()
+                break
+            except frappe.QueryDeadlockError:
+                frappe.db.rollback()
+                if attempt == 2:
+                    raise
+                time.sleep(0.1 * (attempt + 1))
 
         return doc
 
+    def increment_downtime_checks(self, downtime_name):
+        for attempt in range(3):
+            try:
+                frappe.db.sql("""
+                    UPDATE `tabNetwork Downtime`
+                    SET number_of_checks = COALESCE(number_of_checks, 0) + 1,
+                        modified = NOW()
+                    WHERE name = %s
+                """, (downtime_name,))
+                frappe.db.commit()
+                break
+            except frappe.QueryDeadlockError:
+                frappe.db.rollback()
+                if attempt == 2:
+                    raise
+                time.sleep(0.1 * (attempt + 1))
 
-
-    def increment_downtime_checks(
-        self,
-        downtime_name
-    ):
-
-        downtime = frappe.get_doc(
-            "Network Downtime",
-            downtime_name
-        )
-
-        downtime.number_of_checks = (
-            downtime.number_of_checks or 0
-        ) + 1
-
-        downtime.save(
-            ignore_permissions=True
-        )
-
-        return downtime
-
-
+        return frappe.get_doc("Network Downtime", downtime_name)
 
     def close_downtime(self, downtime, check):
+        ended_at = check["check_time"]
+        seconds = time_diff_in_seconds(ended_at, downtime.started_at)
+        duration_minutes = round(seconds / 60, 2)
 
-        downtime.ended_at = check["check_time"]
-
-        seconds = time_diff_in_seconds(
-            downtime.ended_at,
-            downtime.started_at
-        )
-
-        downtime.duration_minutes = round(
-            seconds / 60,
-            2
-        )
-
-        downtime.status = "Closed"
-
-        downtime.save(
-            ignore_permissions=True
-        )
-
+        for attempt in range(3):
+            try:
+                frappe.db.set_value(
+                    "Network Downtime",
+                    downtime.name,
+                    {
+                        "ended_at": ended_at,
+                        "duration_minutes": duration_minutes,
+                        "status": "Closed"
+                    }
+                )
+                frappe.db.commit()
+                break
+            except frappe.QueryDeadlockError:
+                frappe.db.rollback()
+                if attempt == 2:
+                    raise
+                time.sleep(0.1 * (attempt + 1))
 
     # --------------------------------------------------
     # Alerts
     # --------------------------------------------------
 
-    def create_alert(
-        self,
-        device,
-        downtime,
-        check
-    ):
-
-        alert = frappe.new_doc(
-            "Network Alert"
-        )
+    def create_alert(self, device, downtime, check):
+        alert = frappe.new_doc("Network Alert")
 
         alert.device = device.name
         alert.device_type = device.device_type
@@ -515,28 +415,22 @@ class CheckProcessor:
         else:
             alert.severity = "Warning"
 
-        alert.insert(
-            ignore_permissions=True
-        )
+        for attempt in range(3):
+            try:
+                alert.insert(ignore_permissions=True)
+                frappe.db.commit()
+                break
+            except frappe.QueryDeadlockError:
+                frappe.db.rollback()
+                if attempt == 2:
+                    raise
+                time.sleep(0.1 * (attempt + 1))
 
-        self.notification_service.send(
-            alert
-        )
-
+        self.notification_service.send(alert)
         return alert
 
-
-
-    def create_recovery_alert(
-        self,
-        device,
-        downtime,
-        check
-    ):
-
-        alert = frappe.new_doc(
-            "Network Alert"
-        )
+    def create_recovery_alert(self, device, downtime, check):
+        alert = frappe.new_doc("Network Alert")
 
         alert.device = device.name
         alert.device_type = device.device_type
@@ -545,12 +439,16 @@ class CheckProcessor:
         alert.alert_type = "Device Recovered"
         alert.severity = "Info"
 
-        alert.insert(
-            ignore_permissions=True
-        )
+        for attempt in range(3):
+            try:
+                alert.insert(ignore_permissions=True)
+                frappe.db.commit()
+                break
+            except frappe.QueryDeadlockError:
+                frappe.db.rollback()
+                if attempt == 2:
+                    raise
+                time.sleep(0.1 * (attempt + 1))
 
-        self.notification_service.send(
-            alert
-        )
-
+        self.notification_service.send(alert)
         return alert
