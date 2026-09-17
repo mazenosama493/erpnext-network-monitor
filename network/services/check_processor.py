@@ -173,7 +173,8 @@ class CheckProcessor:
         values = {
             "status": new_status,
             "last_check": check_time,
-            "response_time": check.get("avg_response_time"),
+            # Add 'or 0' to prevent NULL values from crashing the query
+            "response_time": check.get("avg_response_time") or 0.0,
         }
 
         if new_status == "Online":
@@ -192,6 +193,7 @@ class CheckProcessor:
                 frappe.db.rollback()
                 if attempt == 2:
                     raise
+                import time
                 time.sleep(0.1 * (attempt + 1))
 
     # --------------------------------------------------
