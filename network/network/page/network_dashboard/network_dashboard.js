@@ -1,4 +1,3 @@
-
 frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
 
     var page = frappe.ui.make_app_page({
@@ -63,7 +62,7 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
 
                 .device-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+                    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
                     gap: 14px;
                 }
 
@@ -115,6 +114,13 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
                     border-radius: 10px;
                     color: var(--network-muted);
                     text-align: center;
+                }
+                
+                /* تنسيق الموبايل للشاشات الصغيرة لتجنب تكدس النصوص */
+                .metric-row {
+                    display: flex;
+                    justify-content: space-between;
+                    flex-wrap: wrap; 
                 }
 
                 @media (max-width: 900px) {
@@ -213,7 +219,7 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
         applyFilters();
     });
     toolbar.on('change', 'select', function() {
-        filterState[$(this).attr('id').replace('network-', '').replace('-filter', '')] = $(this).val();
+        filterState[$(this).attr('id').replace('network-', '').replace('-filter', '')] =$(this).val();
         applyFilters();
     });
 
@@ -316,58 +322,48 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
                         </div>
 
 
-                        <div style="
-                            display: flex;
-                            justify-content: space-between;
-                        ">
+                        <div class="metric-row">
                             <b>
                                 Gateway (<span class="gw-ip">N/A</span>):
                             </b>
 
-                            <span>
+                            <span style="text-align: right;">
                                 <span class="gateway-ping">--</span>
-                                |
-                                Loss:
-                                <span class="gateway-loss">--</span>%
-                                |
-                                Jitter:
-                                <span class="gateway-jitter">--</span>ms
+                                | Loss: <span class="gateway-loss">--</span>%
+                                | Jitter: <span class="gateway-jitter">--</span>ms
                             </span>
                         </div>
 
 
-                        <div style="
-                            display: flex;
-                            justify-content: space-between;
-                        ">
+                        <div class="metric-row">
                             <b>Internet :</b>
 
-                            <span>
+                            <span style="text-align: right;">
                                 <span class="internet-ping">--</span>
-                                |
-                                Loss:
-                                <span class="internet-loss">--</span>%
+                                | Loss: <span class="internet-loss">--</span>%
                             </span>
                         </div>
 
 
-                        <div style="
-                            display: flex;
-                            justify-content: space-between;
-                        ">
+                        <div class="metric-row">
                             <b>DNS :</b>
-
                             <span class="dns-status">--</span>
                         </div>
 
 
-                        <div style="
-                            display: flex;
-                            justify-content: space-between;
-                        ">
+                        <div class="metric-row">
                             <b>TCP :</b>
-
                             <span class="tcp-status">--</span>
+                        </div>
+                        
+                        <!-- إضافة صف الـ UDP VoIP هنا -->
+                        <div class="metric-row">
+                            <b>UDP VoIP :</b>
+                            <span style="text-align: right;">
+                                <span class="udp-ping">--</span>
+                                | Loss: <span class="udp-loss">--</span>%
+                                | Jitter: <span class="udp-jitter">--</span>ms
+                            </span>
                         </div>
 
 
@@ -481,7 +477,7 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
 
 
         let badgeColor =
-            status === 'ONLINE'
+            status === 'ONLINE' || status === 'GOOD'
                 ? '#d4edda'
                 : (
                     status === 'STARTING'
@@ -490,7 +486,7 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
                 );
 
         let textColor =
-            status === 'ONLINE'
+            status === 'ONLINE' || status === 'GOOD'
                 ? '#155724'
                 : (
                     status === 'STARTING'
@@ -507,47 +503,42 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
             });
 
 
+        // ------------------------- Gateway -------------------------
         let gwPing = metrics.gateway_latency;
-
         card.find('.gateway-ping').text(
             gwPing !== null && gwPing !== undefined
                 ? `${gwPing} ms`
                 : 'Timeout'
         );
 
-
         card.find('.gateway-loss').text(
-            metrics.gateway_packet_loss !== null
+            metrics.gateway_packet_loss !== null && metrics.gateway_packet_loss !== undefined
                 ? metrics.gateway_packet_loss
                 : '0'
         );
 
-
         card.find('.gateway-jitter').text(
-            metrics.gateway_jitter !== null
+            metrics.gateway_jitter !== null && metrics.gateway_jitter !== undefined
                 ? metrics.gateway_jitter
                 : '0'
         );
 
-
+        // ------------------------- Internet -------------------------
         let netPing = metrics.internet_latency;
-
         card.find('.internet-ping').text(
             netPing !== null && netPing !== undefined
                 ? `${netPing} ms`
                 : 'Timeout'
         );
 
-
         card.find('.internet-loss').text(
-            metrics.internet_packet_loss !== null
+            metrics.internet_packet_loss !== null && metrics.internet_packet_loss !== undefined
                 ? metrics.internet_packet_loss
                 : '0'
         );
 
-
+        // ------------------------- DNS & TCP -------------------------
         let dnsOk = metrics.dns === true;
-
         let dnsTime =
             metrics.dns_latency !== null &&
             metrics.dns_latency !== undefined
@@ -560,7 +551,6 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
                 ? ` [${metrics.dns_resolved_ip}]`
                 : '';
 
-
         card.find('.dns-status').text(
             dnsOk
                 ? `✅ Pass${dnsTime}${dnsIp}`
@@ -569,13 +559,11 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
 
 
         let tcpOk = metrics.tcp_443 === true;
-
         let tcpTime =
             metrics.tcp_443_latency !== null &&
             metrics.tcp_443_latency !== undefined
                 ? ` (${metrics.tcp_443_latency} ms)`
                 : '';
-
 
         card.find('.tcp-status').text(
             tcpOk
@@ -583,7 +571,27 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
                 : '❌ Fail'
         );
 
+        // ------------------------- UDP VoIP (New) -------------------------
+        let udpPing = metrics.udp_latency;
+        card.find('.udp-ping').text(
+            udpPing !== null && udpPing !== undefined
+                ? `${udpPing} ms`
+                : 'Timeout'
+        );
 
+        card.find('.udp-loss').text(
+            metrics.udp_packet_loss !== null && metrics.udp_packet_loss !== undefined
+                ? metrics.udp_packet_loss
+                : '0'
+        );
+
+        card.find('.udp-jitter').text(
+            metrics.udp_jitter !== null && metrics.udp_jitter !== undefined
+                ? metrics.udp_jitter
+                : '0'
+        );
+
+        // ------------------------- System & Speed -------------------------
         card.find('.last-update').text(
             metrics.last_update
                 ? metrics.last_update
@@ -592,19 +600,13 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
 
 
         if (metrics.downtime_active) {
-
             card.find('.downtime-box').show();
-
             card.find('.downtime-start').text(
                 metrics.downtime_start || 'Just now'
             );
-
         } else {
-
             card.find('.downtime-box').hide();
-
         }
-
 
         let downSpeed =
             metrics.download !== undefined
@@ -629,23 +631,16 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
 
     // Initial data load from Redis
     function refreshLiveDevices() {
-
         frappe.call({
             method: "network.api.devices_api.get_active_devices",
-
             callback: function(r) {
-
                 if (r && r.message) {
-
                     r.message.forEach(item => {
-
                         renderDeviceCard(
                             item.device_id,
                             item.metrics
                         );
-
                     });
-
                     loadPCDepartments();
                     loadDepartmentOptions();
                 }
@@ -662,97 +657,60 @@ frappe.pages['network-dashboard'].on_page_load = function(wrapper) {
 
     // Handle Socket.IO live updates
     function handleLiveNetworkUpdate(incoming) {
-
         let data = incoming;
 
         if (incoming && incoming.message) {
             data = incoming.message;
         }
 
-
         if (typeof data === 'string') {
-
             try {
                 data = JSON.parse(data);
             } catch (e) {
-                console.error(
-                    'Invalid live network update:',
-                    e
-                );
+                console.error('Invalid live network update:', e);
                 return;
             }
         }
-
 
         if (!data || !data.device_id) {
             return;
         }
 
-
         let metrics = data.metrics;
 
-
         if (typeof metrics === 'string') {
-
             try {
                 metrics = JSON.parse(metrics);
             } catch (e) {
-                console.error(
-                    'Invalid metrics:',
-                    e
-                );
-
+                console.error('Invalid metrics:', e);
                 metrics = {};
             }
         }
 
-
         if (metrics) {
-
-            console.log(
-                '🔥 LIVE NETWORK UPDATE:',
-                data.device_id,
-                metrics
-            );
-
-            renderDeviceCard(
-                data.device_id,
-                metrics
-            );
+            // console.log('🔥 LIVE NETWORK UPDATE:', data.device_id, metrics);
+            renderDeviceCard(data.device_id, metrics);
         }
     }
 
 
     // Register the realtime listener directly.
-    // No waiting for frappe.realtime.socket.
     frappe.realtime.on(
         'live_network_update',
         handleLiveNetworkUpdate
     );
 
 
-    // Mark devices stale if no update is received
-    // for more than 5 seconds.
+    // Mark devices stale if no update is received for more than 5 seconds.
     setInterval(function() {
-
         let now = Date.now();
-
         for (let deviceId in deviceLastSeen) {
-
-            if (
-                now - deviceLastSeen[deviceId] > 5000
-            ) {
-
+            if (now - deviceLastSeen[deviceId] > 5000) {
                 getDeviceCard(deviceId)
                     .addClass('device-card-stale')
-                    .attr(
-                        'title',
-                        'No live update received in the last 5 seconds'
-                    );
+                    .attr('title', 'No live update received in the last 5 seconds');
             }
         }
-
     }, 1000);
 
 };
-

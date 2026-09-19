@@ -6,6 +6,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "general_section",
+  "enable_monitoring",
   "intervals_section",
   "downtime_delay",
   "gateway_interval",
@@ -20,9 +22,24 @@
   "dns_test_domain",
   "tcp_test_host",
   "tcp_test_port",
+  "udp_voip_settings_section",
+  "udp_interval",
+  "udp_target_host",
+  "udp_target_port",
+  "udp_pps",
+  "udp_duration",
   "ping_settings_section",
   "ping_timeout_ms",
-  "ping_count"
+  "ping_count",
+  "analyzer_thresholds_section",
+  "gateway_loss_threshold",
+  "gateway_latency_threshold",
+  "internet_loss_threshold",
+  "internet_latency_threshold",
+  "internet_jitter_threshold",
+  "udp_loss_threshold",
+  "udp_latency_threshold",
+  "udp_jitter_threshold"
  ],
  "fields": [
   {
@@ -141,13 +158,125 @@
    "in_list_view": 1,
    "label": "Downtime Delay",
    "reqd": 1
+  },
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "General"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_monitoring",
+   "fieldtype": "Check",
+   "label": "Enable Monitoring"
+  },
+  {
+   "fieldname": "udp_voip_settings_section",
+   "fieldtype": "Section Break",
+   "label": "UDP VoIP Settings"
+  },
+  {
+   "default": "1.0",
+   "fieldname": "udp_interval",
+   "fieldtype": "Float",
+   "label": "UDP Interval",
+   "reqd": 1
+  },
+  {
+   "default": "stun.l.google.com",
+   "fieldname": "udp_target_host",
+   "fieldtype": "Data",
+   "label": "UDP Target Host",
+   "reqd": 1
+  },
+  {
+   "default": "19302",
+   "fieldname": "udp_target_port",
+   "fieldtype": "Int",
+   "label": "UDP Target Port",
+   "reqd": 1
+  },
+  {
+   "default": "50",
+   "fieldname": "udp_pps",
+   "fieldtype": "Int",
+   "label": "UDP Packets Per Second",
+   "reqd": 1
+  },
+  {
+   "default": "1.0",
+   "fieldname": "udp_duration",
+   "fieldtype": "Float",
+   "label": "UDP Duration",
+   "reqd": 1
+  },
+  {
+   "fieldname": "analyzer_thresholds_section",
+   "fieldtype": "Section Break",
+   "label": "Analyzer Thresholds"
+  },
+  {
+   "default": "50.0",
+   "fieldname": "gateway_loss_threshold",
+   "fieldtype": "Float",
+   "label": "Gateway Loss Threshold (%)",
+   "reqd": 1
+  },
+  {
+   "default": "100.0",
+   "fieldname": "gateway_latency_threshold",
+   "fieldtype": "Float",
+   "label": "Gateway Latency Threshold (ms)",
+   "reqd": 1
+  },
+  {
+   "default": "20.0",
+   "fieldname": "internet_loss_threshold",
+   "fieldtype": "Float",
+   "label": "Internet Loss Threshold (%)",
+   "reqd": 1
+  },
+  {
+   "default": "150.0",
+   "fieldname": "internet_latency_threshold",
+   "fieldtype": "Float",
+   "label": "Internet Latency Threshold (ms)",
+   "reqd": 1
+  },
+  {
+   "default": "30.0",
+   "fieldname": "internet_jitter_threshold",
+   "fieldtype": "Float",
+   "label": "Internet Jitter Threshold (ms)",
+   "reqd": 1
+  },
+  {
+   "default": "10.0",
+   "fieldname": "udp_loss_threshold",
+   "fieldtype": "Float",
+   "label": "UDP Loss Threshold (%)",
+   "reqd": 1
+  },
+  {
+   "default": "150.0",
+   "fieldname": "udp_latency_threshold",
+   "fieldtype": "Float",
+   "label": "UDP Latency Threshold (ms)",
+   "reqd": 1
+  },
+  {
+   "default": "30.0",
+   "fieldname": "udp_jitter_threshold",
+   "fieldtype": "Float",
+   "label": "UDP Jitter Threshold (ms)",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-09-12 16:03:59.250595",
+ "modified": "2026-09-19 15:26:54.525506",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Agent Settings",
