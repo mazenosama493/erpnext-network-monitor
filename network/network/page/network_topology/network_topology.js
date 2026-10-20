@@ -111,13 +111,11 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
 
         let bodyContent = '';
 
-        // 1. Primary: Use the attached `topology_icon` image if available
         if (topologyIcon) {
             bodyContent = `
                 <image href="${topologyIcon}" x="8" y="10" width="44" height="44" preserveAspectRatio="xMidYMid meet"/>
             `;
         } else {
-            // 2. Fallback: Built-in SVG icon based on `icon` / `device_type`
             const iconStr = ((typeIcon || '') + ' ' + (deviceType || '')).toLowerCase();
             let innerGraphic = '';
 
@@ -204,11 +202,17 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
                 const visNodes = [];
                 nodes.forEach(n => {
                     nodeStateMap[n.id] = n.visual_state;
+                    
+                    // If node already exists on canvas, preserve its current user-dragged position
+                    let existingNode = nodesDataSet ? nodesDataSet.get(n.id) : null;
+                    let posX = existingNode ? existingNode.x : n.x;
+                    let posY = existingNode ? existingNode.y : n.y;
+
                     visNodes.push({
                         id: n.id,
                         label: n.label,
-                        x: n.x,
-                        y: n.y,
+                        x: posX,
+                        y: posY,
                         shape: 'image',
                         image: buildDeviceSvgDataUri(n.device_type, n.visual_state, n.type_icon, n.topology_icon),
                         font: { color: '#e5e7eb', size: 12, face: 'Arial', vadjust: 6 },
@@ -236,8 +240,31 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
     function renderGraph(visNodes, visEdges, preserveViewport) {
         const container = document.getElementById('vis-canvas');
         
-        nodesDataSet = new vis.DataSet(visNodes);
-        edgesDataSet = new vis.DataSet(visEdges);
+        if (!nodesDataSet) {
+            nodesDataSet = new vis.DataSet(visNodes);
+        } else {
+            // Update existing dataset items without resetting positions
+            visNodes.forEach(newNode => {
+                let existing = nodesDataSet.get(newNode.id);
+                if (existing) {
+                    nodesDataSet.update({
+                        id: newNode.id,
+                        label: newNode.label,
+                        image: newNode.image,
+                        data: newNode.data
+                    });
+                } else {
+                    nodesDataSet.add(newNode);
+                }
+            });
+        }
+
+        if (!edgesDataSet) {
+            edgesDataSet = new vis.DataSet(visEdges);
+        } else {
+            edgesDataSet.clear();
+            edgesDataSet.add(visEdges);
+        }
 
         const data = { nodes: nodesDataSet, edges: edgesDataSet };
         const options = {
@@ -255,86 +282,28 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
             }
         };
 
-        if (network) {
-            const scale = network.getScale();
-            const position = network.getViewPosition();
-            network.destroy();
+        if (!network) {
             network = new vis.Network(container, data, options);
-            if (preserveViewport) {
-                network.moveTo({ position: position, scale: scale });
-            }
-        } else {
-            network = new vis.Network(container, data, options);
+            network.on('click', function(params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    const nodeObj = nodesDataSet.get(nodeId);
+                    const d = nodeObj.data;
+                    const $box =$('#node-info-box');
+                    $box.html(`
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px; color: #60a5fa;">${d.label} (${d.id})</div>
+                        <div><strong>IP:</strong> ${d.ip_address} | <strong>Type:</strong> ${d.device_type}</div>
+                        <div><strong>State:</strong> ${d.visual_state} | <strong>Ping:</strong> ${d.response_time} ms | <strong>Loss:</strong> ${d.packet_loss}%</div>
+                        ${d.downtime_reason ? `<div style="color:#f87171; margin-top:4px;"><strong>Downtime:</strong> ${d.downtime_reason} (Since${d.downtime_started})</div>` : ''}
+                        <div style="margin-top: 6px;">
+                            <a href="/app/network-device/${encodeURIComponent(d.id)}" style="color: #93c5fd; text-decoration: underline;">Open Device Form →</a>
+                        </div>
+                    `).fadeIn(150);
+                } else {
+                    $('#node-info-box').fadeOut(150);
+                }
+            });
         }
-
-        network.on('click', function(params) {
-            if (params.nodes.length > 0) {
-                const nodeId = params.nodes[0];
-                const nodeObj = nodesDataSet.get(nodeId);
-                const d = nodeObj.data;
-                const $box =$('#node-info-box');
-                $box.html(`
-                    <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px; color: #60a5fa;">${d.label} (${d.id})</div>
-                    <div><strong>IP:</strong> ${d.ip_address} | <strong>Type:</strong> ${d.device_type}</div>
-                    <div><strong>State:</strong> ${d.visual_state} | <strong>Ping:</strong> ${d.response_time} ms | <strong>Loss:</strong> ${d.packet_loss}%</div>
-                    ${d.downtime_reason ? `<div style="color:#f87171; margin-top:4px;"><strong>Downtime:</strong> ${d.downtime_reason} (Since${d.downtime_started})</div>` : ''}
-                    <div style="margin-top: 6px;">
-                        <a href="/app/network-device/${encodeURIComponent(d.id)}" style="color: #93c5fd; text-decoration: underline;">Open Device Form →</a>
-                    </div>
-                `).fadeIn(150);
-            } else {
-                $('#node-info-box').fadeOut(150);
-            }
-        });
-    }
-
-    function openAddDeviceDialog() {
-        const options = availableDevicesList.map(d => ({ label: `${d.device_name} (${d.ip_address})`, value: d.name }));
-        options.unshift({ label: __('-- Add All Unplaced Devices --'), value: '__ALL__' });
-
-        const d = new frappe.ui.Dialog({
-            title: __('Add Device to Map'),
-            fields: [
-                { fieldname: 'device', label: __('Select Device'), fieldtype: 'Select', options: options, reqd: 1 }
-            ],
-            primary_action_label: __('Add to Map'),
-            primary_action(values) {
-                frappe.call({
-                    method: 'network.network.page.network_topology.network_topology.add_device_to_map',
-                    args: { map_name: currentMapName, device: values.device },
-                    callback: () => {
-                        d.hide();
-                        loadMapTopology(currentMapName, true);
-                    }
-                });
-            }
-        });
-        d.show();
-    }
-
-    function openAddLinkDialog() {
-        const d = new frappe.ui.Dialog({
-            title: __('Connect Two Devices'),
-            fields: [
-                { fieldname: 'source_device', label: __('Source Device'), fieldtype: 'Link', options: 'Network Device', reqd: 1 },
-                { fieldname: 'target_device', label: __('Target Device'), fieldtype: 'Link', options: 'Network Device', reqd: 1 },
-                { fieldname: 'connection_type', label: __('Connection Type'), fieldtype: 'Select', options: 'Cable\nWireless', default: 'Cable', reqd: 1 },
-                { fieldname: 'source_port', label: __('Source Port (Optional)'), fieldtype: 'Data' },
-                { fieldname: 'target_port', label: __('Target Port (Optional)'), fieldtype: 'Data' }
-            ],
-            primary_action_label: __('Establish Link'),
-            primary_action(values) {
-                frappe.call({
-                    method: 'network.network.page.network_topology.network_topology.add_link_to_map',
-                    args: Object.assign({ map_name: currentMapName }, values),
-                    callback: () => {
-                        d.hide();
-                        loadMapTopology(currentMapName, true);
-                    }
-                });
-            }
-        });
-        d.show();
     }
 
     frappe.realtime.on("network_device_status_update", (data) => {
@@ -348,21 +317,24 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
             visualState = "Warning";
         }
 
-        node.data.status = data.status;
+        const updatedData = Object.assign({}, node.data, {
+            status: data.status,
+            visual_state: visualState,
+            response_time: data.response_time,
+            packet_loss: data.packet_loss
+        });
         if (data.ip_address) {
-            node.data.ip_address = data.ip_address;
+            updatedData.ip_address = data.ip_address;
         }
-        node.data.visual_state = visualState;
-        node.data.response_time = data.response_time;
-        node.data.packet_loss = data.packet_loss;
-        node.image = buildDeviceSvgDataUri(
-            node.data.device_type,
+        const image = buildDeviceSvgDataUri(
+            updatedData.device_type,
             visualState,
-            node.data.type_icon,
-            node.data.topology_icon
+            updatedData.type_icon,
+            updatedData.topology_icon
         );
 
-        nodesDataSet.update(node);
+        // Update ONLY status and image without touching x and y coordinates
+        nodesDataSet.update({ id: data.device, image: image, data: updatedData });
         nodeStateMap[data.device] = visualState;
 
         const connectedEdges = edgesDataSet.get({
