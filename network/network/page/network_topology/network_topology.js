@@ -39,60 +39,56 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
     let nodesDataSet = null;
     let edgesDataSet = null;
 
-    const $editBtn = page.add_inner_button(__('Edit Map: OFF'), () => {
-        editMode = !editMode;
-        $editBtn.text(editMode ? __('Edit Map: ON (Drag Enabled)') : __('Edit Map: OFF'));
-        $editBtn.toggleClass('btn-primary', editMode);
-        if (network) {
-            network.setOptions({ interaction: { dragNodes: editMode } });
-        }
-    });
+    // --- 1. DEFINE ALL HELPER & DIALOG FUNCTIONS FIRST ---
 
-    page.add_inner_button(__('Save Positions'), () => {
-        if (!network || !currentMapName) return;
-        const positions = network.getPositions();
-        const posArray = Object.keys(positions).map(id => ({
-            id: id,
-            x: positions[id].x,
-            y: positions[id].y
-        }));
-        frappe.call({
-            method: 'network.network.page.network_topology.network_topology.save_map_positions',
-            args: { map_name: currentMapName, positions: posArray },
-            callback: () => frappe.show_alert({ message: __('Node coordinates saved successfully'), indicator: 'green' })
+    function openAddDeviceDialog() {
+        const options = availableDevicesList.map(d => ({ label: `${d.device_name} (${d.ip_address})`, value: d.name }));
+        options.unshift({ label: __('-- Add All Unplaced Devices --'), value: '__ALL__' });
+
+        const d = new frappe.ui.Dialog({
+            title: __('Add Device to Map'),
+            fields: [
+                { fieldname: 'device', label: __('Select Device'), fieldtype: 'Select', options: options, reqd: 1 }
+            ],
+            primary_action_label: __('Add to Map'),
+            primary_action(values) {
+                frappe.call({
+                    method: 'network.network.page.network_topology.network_topology.add_device_to_map',
+                    args: { map_name: currentMapName, device: values.device },
+                    callback: () => {
+                        d.hide();
+                        loadMapTopology(currentMapName, true);
+                    }
+                });
+            }
         });
-    });
+        d.show();
+    }
 
-    page.add_inner_button(__('Add Device'), () => openAddDeviceDialog());
-    page.add_inner_button(__('Connect Devices'), () => openAddLinkDialog());
-
-    page.add_inner_button(__('Delete Selection'), () => {
-        if (!network || !currentMapName) return;
-        const selectedNodes = network.getSelectedNodes();
-        const selectedEdges = network.getSelectedEdges();
-
-        if (selectedNodes.length) {
-            const deviceId = selectedNodes[0];
-            frappe.confirm(__('Remove device {0} from this map?', [deviceId]), () => {
+    function openAddLinkDialog() {
+        const d = new frappe.ui.Dialog({
+            title: __('Connect Two Devices'),
+            fields: [
+                { fieldname: 'source_device', label: __('Source Device'), fieldtype: 'Link', options: 'Network Device', reqd: 1 },
+                { fieldname: 'target_device', label: __('Target Device'), fieldtype: 'Link', options: 'Network Device', reqd: 1 },
+                { fieldname: 'connection_type', label: __('Connection Type'), fieldtype: 'Select', options: 'Cable\nWireless', default: 'Cable', reqd: 1 },
+                { fieldname: 'source_port', label: __('Source Port (Optional)'), fieldtype: 'Data' },
+                { fieldname: 'target_port', label: __('Target Port (Optional)'), fieldtype: 'Data' }
+            ],
+            primary_action_label: __('Establish Link'),
+            primary_action(values) {
                 frappe.call({
-                    method: 'network.network.page.network_topology.network_topology.remove_device_from_map',
-                    args: { map_name: currentMapName, device: deviceId },
-                    callback: () => loadMapTopology(currentMapName, true)
+                    method: 'network.network.page.network_topology.network_topology.add_link_to_map',
+                    args: Object.assign({ map_name: currentMapName }, values),
+                    callback: () => {
+                        d.hide();
+                        loadMapTopology(currentMapName, true);
+                    }
                 });
-            });
-        } else if (selectedEdges.length) {
-            const linkId = selectedEdges[0];
-            frappe.confirm(__('Delete this connection link?'), () => {
-                frappe.call({
-                    method: 'network.network.page.network_topology.network_topology.remove_link_from_map',
-                    args: { map_name: currentMapName, link_id: linkId },
-                    callback: () => loadMapTopology(currentMapName, true)
-                });
-            });
-        } else {
-            frappe.msgprint(__('Please click a device node or connection line on the map first to select it.'));
-        }
-    });
+            }
+        });
+        d.show();
+    }
 
     function buildDeviceSvgDataUri(deviceType, visualState, typeIcon, topologyIcon) {
         let badgeColor = '#6b7280';
@@ -203,7 +199,6 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
                 nodes.forEach(n => {
                     nodeStateMap[n.id] = n.visual_state;
                     
-                    // If node already exists on canvas, preserve its current user-dragged position
                     let existingNode = nodesDataSet ? nodesDataSet.get(n.id) : null;
                     let posX = existingNode ? existingNode.x : n.x;
                     let posY = existingNode ? existingNode.y : n.y;
@@ -243,7 +238,6 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
         if (!nodesDataSet) {
             nodesDataSet = new vis.DataSet(visNodes);
         } else {
-            // Update existing dataset items without resetting positions
             visNodes.forEach(newNode => {
                 let existing = nodesDataSet.get(newNode.id);
                 if (existing) {
@@ -306,6 +300,65 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
         }
     }
 
+    // --- 2. NOW SETUP PAGE BUTTONS (AFTER FUNCTIONS EXIST) ---
+
+    const $editBtn = page.add_inner_button(__('Edit Map: OFF'), () => {
+        editMode = !editMode;
+        $editBtn.text(editMode ? __('Edit Map: ON (Drag Enabled)') : __('Edit Map: OFF'));
+        $editBtn.toggleClass('btn-primary', editMode);
+        if (network) {
+            network.setOptions({ interaction: { dragNodes: editMode } });
+        }
+    });
+
+    page.add_inner_button(__('Save Positions'), () => {
+        if (!network || !currentMapName) return;
+        const positions = network.getPositions();
+        const posArray = Object.keys(positions).map(id => ({
+            id: id,
+            x: positions[id].x,
+            y: positions[id].y
+        }));
+        frappe.call({
+            method: 'network.network.page.network_topology.network_topology.save_map_positions',
+            args: { map_name: currentMapName, positions: posArray },
+            callback: () => frappe.show_alert({ message: __('Node coordinates saved successfully'), indicator: 'green' })
+        });
+    });
+
+    page.add_inner_button(__('Add Device'), () => openAddDeviceDialog());
+    page.add_inner_button(__('Connect Devices'), () => openAddLinkDialog());
+
+    page.add_inner_button(__('Delete Selection'), () => {
+        if (!network || !currentMapName) return;
+        const selectedNodes = network.getSelectedNodes();
+        const selectedEdges = network.getSelectedEdges();
+
+        if (selectedNodes.length) {
+            const deviceId = selectedNodes[0];
+            frappe.confirm(__('Remove device {0} from this map?', [deviceId]), () => {
+                frappe.call({
+                    method: 'network.network.page.network_topology.network_topology.remove_device_from_map',
+                    args: { map_name: currentMapName, device: deviceId },
+                    callback: () => loadMapTopology(currentMapName, true)
+                });
+            });
+        } else if (selectedEdges.length) {
+            const linkId = selectedEdges[0];
+            frappe.confirm(__('Delete this connection link?'), () => {
+                frappe.call({
+                    method: 'network.network.page.network_topology.network_topology.remove_link_from_map',
+                    args: { map_name: currentMapName, link_id: linkId },
+                    callback: () => loadMapTopology(currentMapName, true)
+                });
+            });
+        } else {
+            frappe.msgprint(__('Please click a device node or connection line on the map first to select it.'));
+        }
+    });
+
+    // --- 3. REALTIME WEBSOCKET LISTENER ---
+
     frappe.realtime.on("network_device_status_update", (data) => {
         if (!nodesDataSet || !edgesDataSet) return;
 
@@ -333,7 +386,6 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
             updatedData.topology_icon
         );
 
-        // Update ONLY status and image without touching x and y coordinates
         nodesDataSet.update({ id: data.device, image: image, data: updatedData });
         nodeStateMap[data.device] = visualState;
 
