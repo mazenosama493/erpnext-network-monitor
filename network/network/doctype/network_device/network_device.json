@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "creation": "2026-07-16 21:52:16.845576",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -278,7 +279,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-12 10:29:00.892483",
+ "modified": "2026-10-20 11:28:19.092550",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Device",

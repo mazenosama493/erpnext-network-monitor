@@ -12,6 +12,7 @@
   "description",
   "color",
   "icon",
+  "topology_icon",
   "enabled"
  ],
  "fields": [
@@ -55,12 +56,17 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "fieldname": "topology_icon",
+   "fieldtype": "Attach Image",
+   "label": "Topology Icon"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-25 08:46:31.228401",
+ "modified": "2026-10-20 10:24:47.847999",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Device Type",

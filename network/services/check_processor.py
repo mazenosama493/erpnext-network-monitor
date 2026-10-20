@@ -137,6 +137,17 @@ class CheckProcessor:
             check
         )
 
+        frappe.publish_realtime(
+            event="network_device_status_update",
+            message={
+                "device": device.name,
+                "ip_address": device.ip_address,
+                "status": check["status"],
+                "response_time": check.get("avg_response_time") or 0.0,
+                "packet_loss": check.get("packet_loss") or 0.0,
+            },
+        )
+
     # --------------------------------------------------
     # Validation
     # --------------------------------------------------
