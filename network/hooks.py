@@ -21,6 +21,10 @@ fixtures = [
         "filters": [["module", "=", "Network"]]
     },
     {
+        "dt": "Sidebar",
+        "filters": [["module", "=", "Network"]]
+    },
+    {
         "dt": "Desktop Icon",
         "filters": [["label", "=", "Network"]]
     },
