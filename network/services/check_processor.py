@@ -1,3 +1,4 @@
+import hashlib
 import time
 import frappe
 from frappe.utils import time_diff_in_seconds
@@ -142,6 +143,15 @@ class CheckProcessor:
             message={
                 "device": device.name,
                 "ip_address": device.ip_address,
+                "status": check["status"],
+                "response_time": check.get("avg_response_time") or 0.0,
+                "packet_loss": check.get("packet_loss") or 0.0,
+            },
+        )
+        frappe.publish_realtime(
+            event="public_network_device_status_update",
+            message={
+                "node_id": hashlib.sha256(device.name.encode("utf-8")).hexdigest(),
                 "status": check["status"],
                 "response_time": check.get("avg_response_time") or 0.0,
                 "packet_loss": check.get("packet_loss") or 0.0,

@@ -1,0 +1,293 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Network Topology{% endblock %}
+
+{% block page_content %}
+<style>
+    .public-topology-page {
+        color: #e5e7eb;
+        background: #1e1e1e;
+        padding: 20px;
+        border-radius: 8px;
+    }
+
+    .public-topology-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .public-topology-toolbar label {
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    #public-topology-canvas {
+        height: 75vh;
+        min-height: 400px;
+        position: relative;
+        border: 1px solid #444;
+        border-radius: 8px;
+        background: #1e1e1e;
+    }
+
+    #public-topology-info {
+        display: none;
+        position: absolute;
+        z-index: 2;
+        left: 16px;
+        bottom: 16px;
+        max-width: calc(100% - 32px);
+        padding: 12px 16px;
+        border: 1px solid #444;
+        border-radius: 6px;
+        color: #f3f4f6;
+        background: rgba(20, 20, 20, 0.96);
+    }
+
+    #public-topology-error {
+        display: none;
+        margin: 12px 0;
+        color: #fecaca;
+    }
+
+    @media (max-width: 600px) {
+        .public-topology-page {
+            padding: 12px;
+        }
+
+        .public-topology-toolbar {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+</style>
+
+<main class="public-topology-page">
+    <div class="public-topology-toolbar">
+        <label for="public-map-selector"><strong>Network Topology</strong></label>
+        <select id="public-map-selector" class="form-control" aria-label="Select network map"></select>
+    </div>
+    <div id="public-topology-error" role="alert"></div>
+    <div id="public-topology-canvas" aria-label="Read-only network topology map">
+        <div id="public-topology-info"></div>
+    </div>
+</main>
+
+<script>
+    frappe.ready(function () {
+        const selector = document.getElementById('public-map-selector');
+        const errorBox = document.getElementById('public-topology-error');
+        const infoBox = document.getElementById('public-topology-info');
+        const container = document.getElementById('public-topology-canvas');
+        let topologyNetwork = null;
+        let topologyNodes = null;
+        let topologyEdges = null;
+        let nodeStates = {};
+        let selectedNodeId = null;
+        const stateColors = {
+            Online: '#22c55e',
+            Warning: '#f59e0b',
+            Offline: '#ef4444',
+            Unknown: '#6b7280'
+        };
+
+        function buildDeviceSvgDataUri(device, visualState) {
+            const badgeColor = stateColors[visualState] || stateColors.Unknown;
+            const badgeSymbol = visualState === 'Online' ? '✓'
+                : visualState === 'Warning' ? '!'
+                    : visualState === 'Offline' ? '✕' : '?';
+            let bodyContent;
+
+            if (device.topology_icon) {
+                bodyContent = `<image href="${device.topology_icon}" x="8" y="10" width="44" height="44" preserveAspectRatio="xMidYMid meet"/>`;
+            } else {
+                const iconStr = `${device.type_icon || ''} ${device.device_type || ''}`.toLowerCase();
+                let innerGraphic;
+
+                if (iconStr.includes('router') || iconStr.includes('wifi')) {
+                    innerGraphic = `
+                        <ellipse cx="32" cy="34" rx="14" ry="7" fill="#334155" stroke="#38bdf8" stroke-width="1.5"/>
+                        <path d="M22 34v-6c0-4 20-4 20 0v6" fill="none" stroke="#38bdf8" stroke-width="1.5"/>
+                        <circle cx="32" cy="30" r="1.5" fill="#38bdf8"/>
+                    `;
+                } else if (iconStr.includes('shield') || iconStr.includes('lock') || iconStr.includes('firewall') || iconStr.includes('fw')) {
+                    innerGraphic = `<path d="M32 20l10 4v8c0 7-10 12-10 12s-10-5-10-12v-8l10-4z" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>`;
+                } else if (iconStr.includes('cloud') || iconStr.includes('isp')) {
+                    innerGraphic = `<path d="M24 38h16a6 6 0 0 0 1-11.9A8 8 0 0 0 25 23a7 7 0 0 0-1 15z" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>`;
+                } else {
+                    innerGraphic = `
+                        <rect x="20" y="24" width="24" height="16" rx="2" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+                        <circle cx="25" cy="32" r="1.5" fill="#22c55e"/>
+                        <circle cx="30" cy="32" r="1.5" fill="#38bdf8"/>
+                        <line x1="34" y1="32" x2="39" y2="32" stroke="#64748b" stroke-width="1.5"/>
+                    `;
+                }
+
+                bodyContent = `<rect x="10" y="14" width="44" height="36" rx="6" fill="#1e293b" stroke="#475569" stroke-width="2"/>${innerGraphic}`;
+            }
+
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+                ${bodyContent}
+                <circle cx="50" cy="14" r="10" fill="${badgeColor}" stroke="#1e1e1e" stroke-width="2"/>
+                <text x="50" y="18" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">${badgeSymbol}</text>
+            </svg>`;
+            return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+        }
+
+        function getEdgeColor(sourceId, targetId) {
+            const sourceState = nodeStates[sourceId] || 'Unknown';
+            const targetState = nodeStates[targetId] || 'Unknown';
+            if (sourceState === 'Offline' || targetState === 'Offline') return '#ef4444';
+            if (sourceState !== 'Online' || targetState !== 'Online') return '#eab308';
+            return '#22c55e';
+        }
+
+        function updateConnectedEdges(nodeId) {
+            if (!topologyEdges) return;
+            topologyEdges.get({
+                filter(edge) {
+                    return edge.from === nodeId || edge.to === nodeId;
+                }
+            }).forEach(edge => {
+                edge.color = { color: getEdgeColor(edge.from, edge.to) };
+                topologyEdges.update(edge);
+            });
+        }
+
+        function updateNodeStatus(update) {
+            if (!topologyNodes || !topologyNodes.get(update.node_id)) return;
+
+            const visualState = update.status || 'Unknown';
+            const node = topologyNodes.get(update.node_id);
+            node.data.visual_state = visualState;
+            node.data.response_time = update.response_time;
+            node.data.packet_loss = update.packet_loss;
+            nodeStates[update.node_id] = visualState;
+            topologyNodes.update({
+                id: update.node_id,
+                image: buildDeviceSvgDataUri(node.data, visualState),
+                data: node.data
+            });
+            updateConnectedEdges(update.node_id);
+            if (selectedNodeId === update.node_id) {
+                infoBox.textContent = `${node.data.label} | ${node.data.device_type} | ${visualState}`;
+            }
+        }
+
+        function showError(message) {
+            errorBox.textContent = message;
+            errorBox.style.display = 'block';
+        }
+
+        function loadTopology(mapName) {
+            if (!mapName) return;
+
+            errorBox.style.display = 'none';
+            infoBox.style.display = 'none';
+            frappe.call({
+                method: 'network.network.page.network_topology.network_topology.get_public_map_topology',
+                args: { map_name: mapName },
+                callback(response) {
+                    if (!response.message) {
+                        showError('Unable to load this topology map.');
+                        return;
+                    }
+
+                    const topology = response.message;
+                    nodeStates = {};
+                    topology.nodes.forEach(node => {
+                        nodeStates[node.id] = node.visual_state;
+                    });
+                    const nodes = new vis.DataSet(topology.nodes.map(node => ({
+                        id: node.id,
+                        label: node.label,
+                        x: node.x,
+                        y: node.y,
+                        shape: 'image',
+                        image: buildDeviceSvgDataUri(node, node.visual_state),
+                        size: 30,
+                        font: { color: '#e5e7eb', size: 12, face: 'Arial' },
+                        data: node
+                    })));
+                    const edges = new vis.DataSet(topology.links.map(link => ({
+                        id: link.id,
+                        from: link.source_device,
+                        to: link.target_device,
+                        color: { color: getEdgeColor(link.source_device, link.target_device) },
+                        width: 2,
+                        dashes: link.connection_type === 'Wireless'
+                    })));
+                    const data = { nodes, edges };
+                    const options = {
+                        nodes: { borderWidth: 0 },
+                        edges: { smooth: { type: 'continuous' } },
+                        physics: { enabled: false },
+                        interaction: { dragNodes: false, hover: true }
+                    };
+
+                    if (topologyNetwork) {
+                        topologyNetwork.destroy();
+                    }
+                    topologyNodes = nodes;
+                    topologyEdges = edges;
+                    topologyNetwork = new vis.Network(container, data, options);
+                    topologyNetwork.on('click', function (event) {
+                        if (!event.nodes.length) {
+                            selectedNodeId = null;
+                            infoBox.style.display = 'none';
+                            return;
+                        }
+
+                        selectedNodeId = event.nodes[0];
+                        const node = nodes.get(selectedNodeId).data;
+                        infoBox.textContent = `${node.label} | ${node.device_type} | ${node.visual_state}`;
+                        infoBox.style.display = 'block';
+                    });
+                },
+                error() {
+                    showError('Unable to load this topology map.');
+                }
+            });
+        }
+
+        frappe.realtime.on('public_network_device_status_update', function (update) {
+            updateNodeStatus(update);
+        });
+
+        frappe.require('https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/dist/vis-network.min.js', function () {
+            frappe.call({
+                method: 'network.network.page.network_topology.network_topology.get_public_maps',
+                callback(response) {
+                    const maps = response.message || [];
+                    if (!maps.length) {
+                        showError('No network topology maps are available.');
+                        selector.disabled = true;
+                        return;
+                    }
+
+                    maps.forEach(map => {
+                        selector.add(new Option(map.map_name, map.name));
+                    });
+
+                    const requestedMap = new URLSearchParams(window.location.search).get('map');
+                    const selectedMap = maps.find(map => map.name === requestedMap)
+                        || maps.find(map => map.is_default)
+                        || maps[0];
+                    selector.value = selectedMap.name;
+                    loadTopology(selectedMap.name);
+                    selector.addEventListener('change', () => {
+                        selectedNodeId = null;
+                        loadTopology(selector.value);
+                    });
+                },
+                error() {
+                    showError('Unable to load the available topology maps.');
+                    selector.disabled = true;
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,8 +1,13 @@
 import os
 import json
 import base64
+import hashlib
 import mimetypes
 import frappe
+
+
+def get_public_node_id(device_name):
+    return hashlib.sha256(device_name.encode("utf-8")).hexdigest()
 
 
 def get_topology_icon_data_uri(file_url):
@@ -35,7 +40,7 @@ def get_topology_icon_data_uri(file_url):
         return None
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_maps():
     maps = frappe.get_all(
         "Network Map",
@@ -61,7 +66,7 @@ def get_maps():
     return maps
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_map_topology(map_name):
     map_doc = frappe.get_doc("Network Map", map_name)
 
@@ -120,7 +125,7 @@ def get_map_topology(map_name):
         resp_time = float(dev.response_time or chk.get("avg_response_time") or 0.0)
 
         visual_state = dev.status or "Unknown"
-        if dev.status == "Online" and (packet_loss > 0 or resp_time > 150):
+        if dev.status == "Online" and (packet_loss > 0 or resp_time > 200):
             visual_state = "Warning"
 
         nodes.append({
@@ -170,6 +175,116 @@ def get_map_topology(map_name):
         "links": links,
         "available_devices": available_devices
     }
+
+
+@frappe.whitelist(allow_guest=True)
+def get_public_maps():
+    return frappe.get_all(
+        "Network Map",
+        filters={"enabled": 1},
+        fields=["name", "map_name", "is_default"],
+        order_by="is_default desc, creation asc"
+    )
+
+
+@frappe.whitelist(allow_guest=True)
+def get_public_map_topology(map_name):
+    map_name_label = frappe.db.get_value(
+        "Network Map",
+        {"name": map_name, "enabled": 1},
+        "map_name"
+    )
+    if not map_name_label:
+        frappe.throw("Map not found.", frappe.DoesNotExistError)
+
+    topology = get_map_topology(map_name)
+    public_ids = {node["id"]: get_public_node_id(node["id"]) for node in topology["nodes"]}
+
+    public_nodes = []
+    for node in topology["nodes"]:
+        visual_state = node["status"] or "Unknown"
+        if visual_state == "Online" and (
+            node["packet_loss"] > 0 or node["response_time"] > 200
+        ):
+            visual_state = "Warning"
+        public_nodes.append({
+            "id": public_ids[node["id"]],
+            "label": node["label"],
+            "device_type": node["device_type"],
+            "type_icon": node["type_icon"],
+            "topology_icon": node["topology_icon"],
+            "visual_state": visual_state,
+            "x": node["x"],
+            "y": node["y"],
+        })
+
+    return {
+        "map_name": map_name_label,
+        "nodes": public_nodes,
+        "links": [
+            {
+                "id": f"link-{index}",
+                "source_device": public_ids[link["source_device"]],
+                "target_device": public_ids[link["target_device"]],
+                "connection_type": link["connection_type"],
+            }
+            for index, link in enumerate(topology["links"])
+        ],
+    }
+
+
+@frappe.whitelist(allow_guest=True)
+def get_public_map_statuses(map_name):
+    map_name = frappe.db.get_value(
+        "Network Map",
+        {"name": map_name, "enabled": 1},
+        "name",
+    )
+    if not map_name:
+        frappe.throw("Map not found.", frappe.DoesNotExistError)
+    map_doc = frappe.get_doc("Network Map", map_name)
+    device_names = [row.device for row in (map_doc.nodes or []) if row.device]
+    if not device_names:
+        return []
+
+    devices = frappe.get_all(
+        "Network Device",
+        filters={"name": ["in", device_names], "enabled": 1},
+        fields=["name", "status", "response_time"],
+    )
+    checks = frappe.db.sql(
+        """
+        SELECT nc.device, nc.packet_loss, nc.avg_response_time
+        FROM `tabNetwork Check` nc
+        INNER JOIN (
+            SELECT device, MAX(check_time) AS max_time
+            FROM `tabNetwork Check`
+            WHERE device IN %(devices)s
+            GROUP BY device
+        ) latest ON nc.device = latest.device AND nc.check_time = latest.max_time
+        """,
+        {"devices": [device.name for device in devices]},
+        as_dict=True,
+    ) if devices else []
+    latest_checks = {check.device: check for check in checks}
+
+    statuses = []
+    for device in devices:
+        check = latest_checks.get(device.name, {})
+        response_time = float(device.response_time or check.get("avg_response_time") or 0)
+        packet_loss = float(check.get("packet_loss") or 0)
+        visual_state = device.status or "Unknown"
+        if visual_state == "Online" and (packet_loss > 0 or response_time > 150):
+            visual_state = "Warning"
+
+        statuses.append({
+            "node_id": get_public_node_id(device.name),
+            "status": visual_state,
+            "response_time": response_time,
+            "packet_loss": packet_loss,
+        })
+
+    return statuses
 
 
 @frappe.whitelist()
