@@ -159,7 +159,10 @@
         function updateNodeStatus(update) {
             if (!topologyNodes || !topologyNodes.get(update.node_id)) return;
 
-            const visualState = update.status || 'Unknown';
+            let visualState = update.status || 'Unknown';
+            if (visualState === 'Online' && (update.packet_loss > 0 || update.response_time > 150)) {
+                visualState = 'Warning';
+            }
             const node = topologyNodes.get(update.node_id);
             node.data.visual_state = visualState;
             node.data.response_time = update.response_time;
@@ -252,6 +255,7 @@
             });
         }
 
+        frappe.realtime.init();
         frappe.realtime.on('public_network_device_status_update', function (update) {
             updateNodeStatus(update);
         });

@@ -204,7 +204,7 @@ def get_public_map_topology(map_name):
     for node in topology["nodes"]:
         visual_state = node["status"] or "Unknown"
         if visual_state == "Online" and (
-            node["packet_loss"] > 0 or node["response_time"] > 200
+            node["packet_loss"] > 0 or node["response_time"] > 150
         ):
             visual_state = "Warning"
         public_nodes.append({
