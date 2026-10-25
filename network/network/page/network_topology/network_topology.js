@@ -38,10 +38,12 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
     let availableDevicesList = [];
     let nodesDataSet = null;
     let edgesDataSet = null;
+    let topologyRequestId = 0;
 
     // --- 1. DEFINE ALL HELPER & DIALOG FUNCTIONS FIRST ---
 
     function openAddDeviceDialog() {
+        const mapName = currentMapName;
         const options = availableDevicesList.map(d => ({ label: `${d.device_name} (${d.ip_address})`, value: d.name }));
         options.unshift({ label: __('-- Add All Unplaced Devices --'), value: '__ALL__' });
 
@@ -54,10 +56,10 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
             primary_action(values) {
                 frappe.call({
                     method: 'network.network.page.network_topology.network_topology.add_device_to_map',
-                    args: { map_name: currentMapName, device: values.device },
+                    args: { map_name: mapName, device: values.device },
                     callback: () => {
                         d.hide();
-                        loadMapTopology(currentMapName, true);
+                        if (currentMapName === mapName) loadMapTopology(mapName, true);
                     }
                 });
             }
@@ -66,6 +68,7 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
     }
 
     function openAddLinkDialog() {
+        const mapName = currentMapName;
         const d = new frappe.ui.Dialog({
             title: __('Connect Two Devices'),
             fields: [
@@ -79,10 +82,10 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
             primary_action(values) {
                 frappe.call({
                     method: 'network.network.page.network_topology.network_topology.add_link_to_map',
-                    args: Object.assign({ map_name: currentMapName }, values),
+                    args: Object.assign({ map_name: mapName }, values),
                     callback: () => {
                         d.hide();
-                        loadMapTopology(currentMapName, true);
+                        if (currentMapName === mapName) loadMapTopology(mapName, true);
                     }
                 });
             }
@@ -186,22 +189,26 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
     }
 
     function loadMapTopology(mapName, preserveViewport) {
+        const requestId = ++topologyRequestId;
         frappe.call({
             method: 'network.network.page.network_topology.network_topology.get_map_topology',
             args: { map_name: mapName },
             callback: (r) => {
+                if (requestId !== topologyRequestId || mapName !== currentMapName) return;
                 if (!r.message) return;
                 const { nodes, links, available_devices } = r.message;
                 nodeStateMap = {};
                 availableDevicesList = available_devices;
 
                 const visNodes = [];
+                const currentPositions = preserveViewport && network ? network.getPositions() : {};
                 nodes.forEach(n => {
                     nodeStateMap[n.id] = n.visual_state;
                     
-                    let existingNode = nodesDataSet ? nodesDataSet.get(n.id) : null;
-                    let posX = existingNode ? existingNode.x : n.x;
-                    let posY = existingNode ? existingNode.y : n.y;
+                    let existingNode = preserveViewport && nodesDataSet ? nodesDataSet.get(n.id) : null;
+                    let currentPosition = currentPositions[n.id];
+                    let posX = currentPosition ? currentPosition.x : (existingNode ? existingNode.x : n.x);
+                    let posY = currentPosition ? currentPosition.y : (existingNode ? existingNode.y : n.y);
 
                     visNodes.push({
                         id: n.id,
@@ -234,30 +241,53 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
 
     function renderGraph(visNodes, visEdges, preserveViewport) {
         const container = document.getElementById('vis-canvas');
+        const currentPositions = preserveViewport && network ? network.getPositions() : {};
         
         if (!nodesDataSet) {
             nodesDataSet = new vis.DataSet(visNodes);
         } else {
-            visNodes.forEach(newNode => {
-                let existing = nodesDataSet.get(newNode.id);
-                if (existing) {
-                    nodesDataSet.update({
-                        id: newNode.id,
-                        label: newNode.label,
-                        image: newNode.image,
-                        data: newNode.data
-                    });
+            const currentNodeIds = new Set(visNodes.map(node => node.id));
+            const removedNodeIds = nodesDataSet.getIds().filter(id => !currentNodeIds.has(id));
+            if (removedNodeIds.length) nodesDataSet.remove(removedNodeIds);
+
+            const nodesToUpdate = [];
+            const nodesToAdd = [];
+            visNodes.forEach(node => {
+                if (!nodesDataSet.get(node.id)) {
+                    nodesToAdd.push(node);
+                    return;
+                }
+
+                if (preserveViewport) {
+                    const { x, y, ...nodeData } = node;
+                    nodesToUpdate.push(nodeData);
                 } else {
-                    nodesDataSet.add(newNode);
+                    nodesToUpdate.push(node);
                 }
             });
+
+            if (nodesToUpdate.length) nodesDataSet.update(nodesToUpdate);
+            if (nodesToAdd.length) nodesDataSet.add(nodesToAdd);
         }
 
         if (!edgesDataSet) {
             edgesDataSet = new vis.DataSet(visEdges);
         } else {
-            edgesDataSet.clear();
-            edgesDataSet.add(visEdges);
+            const currentEdgeIds = new Set(visEdges.map(edge => edge.id));
+            const removedEdgeIds = edgesDataSet.getIds().filter(id => !currentEdgeIds.has(id));
+            if (removedEdgeIds.length) edgesDataSet.remove(removedEdgeIds);
+            edgesDataSet.update(visEdges);
+        }
+
+        if (network) network.unselectAll();
+        $('#node-info-box').hide();
+
+        if (network) {
+            Object.keys(currentPositions).forEach(nodeId => {
+                if (nodesDataSet.get(nodeId)) {
+                    network.moveNode(nodeId, currentPositions[nodeId].x, currentPositions[nodeId].y);
+                }
+            });
         }
 
         const data = { nodes: nodesDataSet, edges: edgesDataSet };
@@ -313,6 +343,7 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
 
     page.add_inner_button(__('Save Positions'), () => {
         if (!network || !currentMapName) return;
+        const mapName = currentMapName;
         const positions = network.getPositions();
         const posArray = Object.keys(positions).map(id => ({
             id: id,
@@ -321,7 +352,7 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
         }));
         frappe.call({
             method: 'network.network.page.network_topology.network_topology.save_map_positions',
-            args: { map_name: currentMapName, positions: posArray },
+            args: { map_name: mapName, positions: posArray },
             callback: () => frappe.show_alert({ message: __('Node coordinates saved successfully'), indicator: 'green' })
         });
     });
@@ -335,21 +366,27 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
         const selectedEdges = network.getSelectedEdges();
 
         if (selectedNodes.length) {
+            const mapName = currentMapName;
             const deviceId = selectedNodes[0];
             frappe.confirm(__('Remove device {0} from this map?', [deviceId]), () => {
                 frappe.call({
                     method: 'network.network.page.network_topology.network_topology.remove_device_from_map',
-                    args: { map_name: currentMapName, device: deviceId },
-                    callback: () => loadMapTopology(currentMapName, true)
+                    args: { map_name: mapName, device: deviceId },
+                    callback: () => {
+                        if (currentMapName === mapName) loadMapTopology(mapName, true);
+                    }
                 });
             });
         } else if (selectedEdges.length) {
+            const mapName = currentMapName;
             const linkId = selectedEdges[0];
             frappe.confirm(__('Delete this connection link?'), () => {
                 frappe.call({
                     method: 'network.network.page.network_topology.network_topology.remove_link_from_map',
-                    args: { map_name: currentMapName, link_id: linkId },
-                    callback: () => loadMapTopology(currentMapName, true)
+                    args: { map_name: mapName, link_id: linkId },
+                    callback: () => {
+                        if (currentMapName === mapName) loadMapTopology(mapName, true);
+                    }
                 });
             });
         } else {

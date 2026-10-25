@@ -9,6 +9,7 @@
   "device_name",
   "ip_address",
   "device_type",
+  "is_pc",
   "enabled",
   "description",
   "external_device",
@@ -274,12 +275,19 @@
    "label": "Offline Alert Delay",
    "mandatory_depends_on": "eval:doc.override_notification_settings",
    "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_pc",
+   "fieldtype": "Check",
+   "label": "Is a Pc",
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-20 11:28:19.092550",
+ "modified": "2026-10-25 14:38:03.169900",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Device",
