@@ -7,6 +7,7 @@
  "field_order": [
   "general_section",
   "device",
+  "device_ip",
   "started_at",
   "ended_at",
   "duration_minutes",
@@ -134,12 +135,20 @@
    "label": "Monitoring Down",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fetch_from": "device.ip_address",
+   "fieldname": "device_ip",
+   "fieldtype": "Link",
+   "label": "Device IP/Host",
+   "options": "Network Device",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-03 08:34:38.273845",
+ "modified": "2026-10-27 12:56:35.551131",
  "modified_by": "Administrator",
  "module": "Network",
  "name": "Network Downtime",
