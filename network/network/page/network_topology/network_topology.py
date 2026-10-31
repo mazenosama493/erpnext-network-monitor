@@ -6,11 +6,43 @@ import mimetypes
 import frappe
 
 
+# --------------------------------------------------
+# Cache helpers
+# --------------------------------------------------
+
+ICON_CACHE = "network_topology_icons"   # permanent, keyed by icon file URL
+CACHE_PREFIX = "network_topology:"      # short TTL, cleared on every edit
+CACHE_TTL = 10                          # seconds, map topology
+PUBLIC_STATUS_TTL = 5                   # seconds, guest status polling
+
+
+def _cache():
+    """Work on both old (frappe.cache()) and new (frappe.cache) Frappe versions."""
+    cache = frappe.cache
+    return cache if hasattr(cache, "get_value") else cache()
+
+
+def cached(key, builder, ttl=CACHE_TTL):
+    data = _cache().get_value(key)
+    if data is None:
+        data = builder()
+        _cache().set_value(key, data, expires_in_sec=ttl)
+    return data
+
+
+def clear_topology_cache():
+    _cache().delete_keys(CACHE_PREFIX)
+
+
+# --------------------------------------------------
+# Helpers
+# --------------------------------------------------
+
 def get_public_node_id(device_name):
     return hashlib.sha256(device_name.encode("utf-8")).hexdigest()
 
 
-def get_topology_icon_data_uri(file_url):
+def _read_icon_as_data_uri(file_url):
     """Convert a Frappe attached image (/files/... or /private/files/...) into a Base64 Data URI."""
     if not file_url:
         return None
@@ -40,6 +72,33 @@ def get_topology_icon_data_uri(file_url):
         return None
 
 
+def get_topology_icon_data_uri(file_url):
+    """Cached wrapper: reads and encodes each icon file once, not on every request.
+
+    The key is the file URL. Frappe gives a re-uploaded file a new URL, so
+    replacing a device type's icon is picked up automatically. If a file is ever
+    overwritten in place, clear it with:
+        frappe.cache().delete_value("network_topology_icons")
+    """
+    if not file_url:
+        return None
+
+    file_url = str(file_url).strip()
+    if file_url.startswith("data:image/"):
+        return file_url
+
+    uri = _cache().hget(ICON_CACHE, file_url)
+    if not uri:
+        uri = _read_icon_as_data_uri(file_url)
+        if uri:
+            _cache().hset(ICON_CACHE, file_url, uri)
+    return uri
+
+
+# --------------------------------------------------
+# Maps
+# --------------------------------------------------
+
 @frappe.whitelist()
 def get_maps():
     maps = frappe.get_all(
@@ -66,8 +125,7 @@ def get_maps():
     return maps
 
 
-@frappe.whitelist()
-def get_map_topology(map_name):
+def _build_map_topology(map_name):
     map_doc = frappe.get_doc("Network Map", map_name)
 
     all_devices = frappe.get_all(
@@ -82,12 +140,11 @@ def get_map_topology(map_name):
         "Network Device Type",
         fields=["name", "device_type_name", "code", "color", "icon", "topology_icon"]
     ):
-        dt["topology_icon_uri"] = get_topology_icon_data_uri(dt.get("topology_icon"))
         device_types[dt.name] = dt
 
     map_nodes = getattr(map_doc, "nodes", []) or []
     map_device_ids = [row.device for row in map_nodes if row.device in device_lookup]
-    
+
     latest_checks = {}
     if map_device_ids:
         checks = frappe.db.sql("""
@@ -111,6 +168,9 @@ def get_map_topology(map_name):
         )
         open_downtimes = {dt.device: dt for dt in downtimes}
 
+    # One icon per device type used on this map, sent once instead of per node
+    icons = {}
+
     nodes = []
     for row in map_nodes:
         dev = device_lookup.get(row.device)
@@ -120,6 +180,9 @@ def get_map_topology(map_name):
         chk = latest_checks.get(dev.name, {})
         dt_meta = device_types.get(dev.device_type, {})
         downtime = open_downtimes.get(dev.name)
+
+        if dev.device_type not in icons:
+            icons[dev.device_type] = get_topology_icon_data_uri(dt_meta.get("topology_icon")) or ""
 
         packet_loss = float(chk.get("packet_loss") or 0.0)
         resp_time = float(dev.response_time or chk.get("avg_response_time") or 0.0)
@@ -137,7 +200,6 @@ def get_map_topology(map_name):
             "type_code": dt_meta.get("code") or dev.device_type,
             "type_color": dt_meta.get("color") or "#3b82f6",
             "type_icon": dt_meta.get("icon") or "octicon octicon-cpu",
-            "topology_icon": dt_meta.get("topology_icon_uri") or "",
             "status": dev.status,
             "visual_state": visual_state,
             "response_time": round(resp_time, 2),
@@ -150,7 +212,7 @@ def get_map_topology(map_name):
         })
 
     valid_node_ids = {n["id"] for n in nodes}
-    
+
     map_links = getattr(map_doc, "links", []) or []
     links = []
     for row in map_links:
@@ -173,9 +235,19 @@ def get_map_topology(map_name):
         "map_name": map_doc.name,
         "nodes": nodes,
         "links": links,
-        "available_devices": available_devices
+        "available_devices": available_devices,
+        "icons": icons,
     }
 
+
+@frappe.whitelist()
+def get_map_topology(map_name):
+    return cached(f"{CACHE_PREFIX}{map_name}", lambda: _build_map_topology(map_name))
+
+
+# --------------------------------------------------
+# Public (guest) endpoints
+# --------------------------------------------------
 
 @frappe.whitelist(allow_guest=True)
 def get_public_maps():
@@ -198,6 +270,7 @@ def get_public_map_topology(map_name):
         frappe.throw("Map not found.", frappe.DoesNotExistError)
 
     topology = get_map_topology(map_name)
+    icons = topology.get("icons") or {}
     public_ids = {node["id"]: get_public_node_id(node["id"]) for node in topology["nodes"]}
 
     public_nodes = []
@@ -212,7 +285,8 @@ def get_public_map_topology(map_name):
             "label": node["label"],
             "device_type": node["device_type"],
             "type_icon": node["type_icon"],
-            "topology_icon": node["topology_icon"],
+            # keeps the public response shape unchanged for the public page JS
+            "topology_icon": icons.get(node["device_type"], ""),
             "visual_state": visual_state,
             "x": node["x"],
             "y": node["y"],
@@ -233,8 +307,7 @@ def get_public_map_topology(map_name):
     }
 
 
-@frappe.whitelist(allow_guest=True)
-def get_public_map_statuses(map_name):
+def _build_public_map_statuses(map_name):
     map_name = frappe.db.get_value(
         "Network Map",
         {"name": map_name, "enabled": 1},
@@ -287,6 +360,20 @@ def get_public_map_statuses(map_name):
     return statuses
 
 
+@frappe.whitelist(allow_guest=True)
+def get_public_map_statuses(map_name):
+    # Guest-accessible, so cache it: load no longer depends on how many people poll it
+    return cached(
+        f"{CACHE_PREFIX}public_status:{map_name}",
+        lambda: _build_public_map_statuses(map_name),
+        ttl=PUBLIC_STATUS_TTL,
+    )
+
+
+# --------------------------------------------------
+# Map editing (every one of these clears the cache)
+# --------------------------------------------------
+
 @frappe.whitelist()
 def save_map_positions(map_name, positions):
     if isinstance(positions, str):
@@ -302,6 +389,7 @@ def save_map_positions(map_name, positions):
             row.map_y = float(pos_map[row.device]["y"])
 
     map_doc.save()
+    clear_topology_cache()
     return {"status": "saved"}
 
 
@@ -332,6 +420,7 @@ def add_device_to_map(map_name, device, map_x=250, map_y=200):
         })
 
     map_doc.save()
+    clear_topology_cache()
     return {"status": "added"}
 
 
@@ -346,6 +435,7 @@ def remove_device_from_map(map_name, device):
             if r.source_device != device and r.target_device != device
         ]
     map_doc.save()
+    clear_topology_cache()
     return {"status": "removed"}
 
 
@@ -388,8 +478,9 @@ def add_link_to_map(map_name, source_device, target_device, connection_type="Cab
         "sp": source_port,
         "tp": target_port
     })
-    
+
     frappe.db.commit()
+    clear_topology_cache()
     return {"status": "linked"}
 
 
@@ -397,6 +488,7 @@ def add_link_to_map(map_name, source_device, target_device, connection_type="Cab
 def remove_link_from_map(map_name, link_id):
     frappe.db.delete("Network Map Link", {"name": link_id, "parent": map_name})
     frappe.db.commit()
+    clear_topology_cache()
     return {"status": "deleted"}
 
 

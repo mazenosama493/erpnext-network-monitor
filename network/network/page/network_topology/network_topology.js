@@ -196,13 +196,14 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
             callback: (r) => {
                 if (requestId !== topologyRequestId || mapName !== currentMapName) return;
                 if (!r.message) return;
-                const { nodes, links, available_devices } = r.message;
+                const { nodes, links, available_devices, icons } = r.message;
                 nodeStateMap = {};
                 availableDevicesList = available_devices;
 
                 const visNodes = [];
                 const currentPositions = preserveViewport && network ? network.getPositions() : {};
                 nodes.forEach(n => {
+                    if (icons) n.topology_icon = icons[n.device_type] || '';
                     nodeStateMap[n.id] = n.visual_state;
                     
                     let existingNode = preserveViewport && nodesDataSet ? nodesDataSet.get(n.id) : null;

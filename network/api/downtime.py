@@ -80,3 +80,35 @@ def close_open_downtimes(
                 time.sleep(0.1 * (attempt + 1))
 
     frappe.log_error(title="Monitoring Debug - Downtime", message=f"C. Successfully closed {success_count} downtimes.")
+
+
+CHUNK_SIZE = 1000
+
+
+def sync_device_ip(device: str):
+    dt = frappe.qb.DocType("Network Downtime")
+
+    while True:
+        # Re-read every pass so a second IP change mid-job is picked up
+        ip = frappe.db.get_value("Network Device", device, "ip_address")
+        if ip is None:
+            return  # device was deleted or renamed meanwhile
+
+        names = (
+            frappe.qb.from_(dt)
+            .select(dt.name)
+            .where(dt.device == device)
+            .where((dt.device_ip != ip) | dt.device_ip.isnull())
+            .limit(CHUNK_SIZE)
+            .run(pluck="name")
+        )
+        if not names:
+            break
+
+        (
+            frappe.qb.update(dt)
+            .set(dt.device_ip, ip)
+            .where(dt.name.isin(names))
+            .run()
+        )
+        frappe.db.commit()  # release row locks after every chunk

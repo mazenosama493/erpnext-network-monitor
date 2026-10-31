@@ -35,15 +35,21 @@ class NetworkDevice(Document):
 
     def on_update(self):
         if (
-            not self.is_new()
+            not self.flags.in_insert
             and self.has_value_changed("enabled")
             and not self.enabled
         ):
-            close_open_downtimes(
+            close_open_downtimes(device=self.name, device_disabled=True)
+            set_status_unknown(reason="Device Disabled", device_name=self.name)
+
+        before = self.get_doc_before_save()
+        if before and before.ip_address != self.ip_address:
+            frappe.enqueue(
+                "network.api.downtime.sync_device_ip",
+                queue="long",
                 device=self.name,
-                device_disabled=True,
+                enqueue_after_commit=True,
             )
-            set_status_unknown(reason="Device Disabled",device_name=self.name)
 
 
     # --------------------------------------------------
