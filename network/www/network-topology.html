@@ -23,13 +23,22 @@
         white-space: nowrap;
     }
 
-    #public-topology-canvas {
+    /* The stage holds the map, the info box and the fullscreen button.
+       vis-network empties its own container when it starts, so those two
+       live next to the canvas instead of inside it. */
+    #public-topology-stage {
         height: 75vh;
         min-height: 400px;
         position: relative;
         border: 1px solid #444;
         border-radius: 8px;
         background: #1e1e1e;
+        overflow: hidden;
+    }
+
+    #public-topology-canvas {
+        width: 100%;
+        height: 100%;
     }
 
     #public-topology-info {
@@ -44,6 +53,51 @@
         border-radius: 6px;
         color: #f3f4f6;
         background: rgba(20, 20, 20, 0.96);
+    }
+
+    #public-topology-fullscreen {
+        position: absolute;
+        z-index: 2;
+        top: 16px;
+        left: 16px;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #f3f4f6;
+        background: rgba(20, 20, 20, 0.9);
+        border: 1px solid #444;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    #public-topology-fullscreen .fs-compress { display: none; }
+    #public-topology-fullscreen.is-fullscreen .fs-expand { display: none; }
+    #public-topology-fullscreen.is-fullscreen .fs-compress { display: block; }
+
+    #public-topology-stage:fullscreen {
+        height: 100vh;
+        border: 0;
+        border-radius: 0;
+    }
+
+    #public-topology-stage:-webkit-full-screen {
+        height: 100vh;
+        border: 0;
+        border-radius: 0;
+    }
+
+    /* Fallback for browsers without the Fullscreen API (e.g. iPhone Safari) */
+    #public-topology-stage.fs-fallback {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 2000;
+        border: 0;
+        border-radius: 0;
     }
 
     #public-topology-error {
@@ -70,8 +124,13 @@
         <select id="public-map-selector" class="form-control" aria-label="Select network map"></select>
     </div>
     <div id="public-topology-error" role="alert"></div>
-    <div id="public-topology-canvas" aria-label="Read-only network topology map">
+    <div id="public-topology-stage" role="region" aria-label="Read-only network topology map">
+        <button id="public-topology-fullscreen" type="button" title="Fullscreen" aria-label="Toggle fullscreen">
+            <svg class="fs-expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+            <svg class="fs-compress" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+        </button>
         <div id="public-topology-info"></div>
+        <div id="public-topology-canvas"></div>
     </div>
 </main>
 
@@ -80,18 +139,91 @@
         const selector = document.getElementById('public-map-selector');
         const errorBox = document.getElementById('public-topology-error');
         const infoBox = document.getElementById('public-topology-info');
+        const stage = document.getElementById('public-topology-stage');
         const container = document.getElementById('public-topology-canvas');
+        const fullscreenBtn = document.getElementById('public-topology-fullscreen');
         let topologyNetwork = null;
         let topologyNodes = null;
         let topologyEdges = null;
         let nodeStates = {};
         let selectedNodeId = null;
+        let fullscreenActive = false;
         const stateColors = {
             Online: '#22c55e',
             Warning: '#f59e0b',
             Offline: '#ef4444',
             Unknown: '#6b7280'
         };
+
+        // ---------- Fullscreen ----------
+
+        function isFullscreen() {
+            const nativeEl = document.fullscreenElement || document.webkitFullscreenElement;
+            return nativeEl === stage || stage.classList.contains('fs-fallback');
+        }
+
+        function syncFullscreenUi() {
+            const on = isFullscreen();
+            if (on === fullscreenActive) return; // ignore fullscreen events from other elements
+            fullscreenActive = on;
+
+            fullscreenBtn.classList.toggle('is-fullscreen', on);
+            fullscreenBtn.title = on ? 'Exit fullscreen' : 'Fullscreen';
+
+            // Wait for the browser to apply the new size, then refit the map
+            setTimeout(function () {
+                if (!topologyNetwork || !stage.offsetWidth) return;
+                topologyNetwork.setSize('100%', '100%');
+                topologyNetwork.redraw();
+                topologyNetwork.fit({ animation: { duration: 300 } });
+            }, 150);
+        }
+
+        function enterFullscreen() {
+            const request = stage.requestFullscreen || stage.webkitRequestFullscreen;
+            const useFallback = function () {
+                stage.classList.add('fs-fallback');
+                syncFullscreenUi();
+            };
+            if (!request) {
+                useFallback();
+                return;
+            }
+
+            const result = request.call(stage);
+            if (result && result.catch) result.catch(useFallback);
+        }
+
+        function exitFullscreen() {
+            if (stage.classList.contains('fs-fallback')) {
+                stage.classList.remove('fs-fallback');
+                syncFullscreenUi();
+                return;
+            }
+            const exit = document.exitFullscreen || document.webkitExitFullscreen;
+            if (exit && (document.fullscreenElement || document.webkitFullscreenElement)) {
+                exit.call(document); // the fullscreenchange event updates the UI
+            }
+        }
+
+        fullscreenBtn.addEventListener('click', function () {
+            if (isFullscreen()) {
+                exitFullscreen();
+            } else {
+                enterFullscreen();
+            }
+        });
+        document.addEventListener('fullscreenchange', syncFullscreenUi);
+        document.addEventListener('webkitfullscreenchange', syncFullscreenUi);
+
+        // Esc is handled by the browser in native fullscreen; the fallback needs it explicitly
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && stage.classList.contains('fs-fallback')) {
+                exitFullscreen();
+            }
+        });
+
+        // ---------- Map ----------
 
         function buildDeviceSvgDataUri(device, visualState) {
             const badgeColor = stateColors[visualState] || stateColors.Unknown;

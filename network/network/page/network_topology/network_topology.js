@@ -13,6 +13,16 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
             </div>
         </div>
 
+        <style>
+            #topology-wrapper:fullscreen { border: 0 !important; border-radius: 0 !important; }
+            #topology-wrapper:-webkit-full-screen { border: 0 !important; border-radius: 0 !important; }
+            /* Fallback for browsers without the Fullscreen API (e.g. iPhone Safari) */
+            #topology-wrapper.topology-fs-fallback {
+                position: fixed !important; inset: 0; width: 100vw !important; height: 100vh !important;
+                z-index: 1040; border: 0 !important; border-radius: 0 !important;
+            }
+        </style>
+
         <div id="topology-wrapper" style="position: relative; width: 100%; height: 78vh; background: #1e1e1e; border-radius: 8px; overflow: hidden; border: 1px solid #333;">
             <div style="position: absolute; top: 16px; right: 16px; z-index: 10; background: #ffffff; color: #111; padding: 12px 18px; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-size: 13px; min-width: 190px;">
                 <div style="display: flex; align-items: center; margin-bottom: 8px;">
@@ -26,6 +36,12 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
             </div>
 
             <div id="node-info-box" style="display: none; position: absolute; bottom: 16px; left: 16px; z-index: 10; background: rgba(20, 20, 20, 0.94); color: #f3f4f6; padding: 14px 18px; border-radius: 6px; border: 1px solid #444; font-size: 12px; min-width: 260px; box-shadow: 0 4px 15px rgba(0,0,0,0.6);"></div>
+
+            <button id="topology-fullscreen-btn" type="button" title="${__('Fullscreen')}" aria-label="${__('Toggle fullscreen')}"
+                style="position: absolute; top: 16px; left: 16px; z-index: 10; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; background: rgba(20, 20, 20, 0.9); color: #f3f4f6; border: 1px solid #444; border-radius: 6px; cursor: pointer;">
+                <svg class="fs-expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                <svg class="fs-compress" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+            </button>
 
             <div id="vis-canvas" style="width: 100%; height: 100%;"></div>
         </div>
@@ -394,6 +410,73 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
             frappe.msgprint(__('Please click a device node or connection line on the map first to select it.'));
         }
     });
+
+    // --- 2b. FULLSCREEN ---
+
+    const topologyEl = document.getElementById('topology-wrapper');
+    const $fsBtn = $('#topology-fullscreen-btn');
+    let fsActive = false;
+
+    function isFullscreen() {
+        const nativeEl = document.fullscreenElement || document.webkitFullscreenElement;
+        return nativeEl === topologyEl || topologyEl.classList.contains('topology-fs-fallback');
+    }
+
+    function syncFullscreenUi() {
+        const on = isFullscreen();
+        if (on === fsActive) return; // ignore fullscreen events from other elements
+        fsActive = on;
+
+        $fsBtn.attr('title', on ? __('Exit fullscreen') : __('Fullscreen'));
+        $fsBtn.find('.fs-expand').toggle(!on);
+        $fsBtn.find('.fs-compress').toggle(on);
+
+        // Wait for the browser to apply the new size, then refit the map
+        setTimeout(() => {
+            if (!network || !topologyEl.offsetWidth) return;
+            network.setSize('100%', '100%');
+            network.redraw();
+            network.fit({ animation: { duration: 300 } });
+        }, 150);
+    }
+
+    function enterFullscreen() {
+        const request = topologyEl.requestFullscreen || topologyEl.webkitRequestFullscreen;
+        const useFallback = () => {
+            topologyEl.classList.add('topology-fs-fallback');
+            syncFullscreenUi();
+        };
+        if (!request) return useFallback();
+
+        const result = request.call(topologyEl);
+        if (result && result.catch) result.catch(useFallback);
+    }
+
+    function exitFullscreen() {
+        if (topologyEl.classList.contains('topology-fs-fallback')) {
+            topologyEl.classList.remove('topology-fs-fallback');
+            syncFullscreenUi();
+            return;
+        }
+        const exit = document.exitFullscreen || document.webkitExitFullscreen;
+        if (exit && (document.fullscreenElement || document.webkitFullscreenElement)) {
+            exit.call(document); // the fullscreenchange event updates the UI
+        }
+    }
+
+    $fsBtn.on('click', () => (isFullscreen() ? exitFullscreen() : enterFullscreen()));
+    document.addEventListener('fullscreenchange', syncFullscreenUi);
+    document.addEventListener('webkitfullscreenchange', syncFullscreenUi);
+
+    // Esc is handled by the browser in native fullscreen; the fallback needs it explicitly
+    $(document).on('keydown.topologyfs', (e) => {
+        if (e.key === 'Escape' && topologyEl.classList.contains('topology-fs-fallback')) exitFullscreen();
+    });
+
+    // Leave fullscreen when navigating away (e.g. "Open Device Form")
+    if (frappe.router && frappe.router.on) {
+        frappe.router.on('change', () => { if (isFullscreen()) exitFullscreen(); });
+    }
 
     // --- 3. REALTIME WEBSOCKET LISTENER ---
 
