@@ -148,6 +148,9 @@
         let nodeStates = {};
         let selectedNodeId = null;
         let fullscreenActive = false;
+        let topologyRequestId = 0;
+        const topologyCache = {}; // map id -> last server response (shown instantly on switch)
+        const svgCache = {};      // device type + state -> generated SVG data URI
         const stateColors = {
             Online: '#22c55e',
             Warning: '#f59e0b',
@@ -226,6 +229,15 @@
         // ---------- Map ----------
 
         function buildDeviceSvgDataUri(device, visualState) {
+            const key = [device.device_type, visualState, device.type_icon || '',
+                device.topology_icon ? device.topology_icon.length : 0].join('|');
+            if (!svgCache[key]) {
+                svgCache[key] = buildDeviceSvgDataUriUncached(device, visualState);
+            }
+            return svgCache[key];
+        }
+
+        function buildDeviceSvgDataUriUncached(device, visualState) {
             const badgeColor = stateColors[visualState] || stateColors.Unknown;
             const badgeSymbol = visualState === 'Online' ? '✓'
                 : visualState === 'Warning' ? '!'
@@ -316,73 +328,144 @@
             errorBox.style.display = 'block';
         }
 
+        function prepareTopology(topology) {
+            // Icons arrive once per device type; attach them to the nodes that use them
+            const icons = topology.icons;
+            nodeStates = {};
+            topology.nodes.forEach(node => {
+                if (icons) node.topology_icon = icons[node.device_type] || '';
+                nodeStates[node.id] = node.visual_state;
+            });
+        }
+
+        function buildNodeItem(node) {
+            return {
+                id: node.id,
+                label: node.label,
+                x: node.x,
+                y: node.y,
+                shape: 'image',
+                image: buildDeviceSvgDataUri(node, node.visual_state),
+                size: 30,
+                font: { color: '#e5e7eb', size: 12, face: 'Arial' },
+                data: node
+            };
+        }
+
+        function buildEdgeItem(link) {
+            return {
+                id: link.id,
+                from: link.source_device,
+                to: link.target_device,
+                color: { color: getEdgeColor(link.source_device, link.target_device) },
+                width: 2,
+                dashes: link.connection_type === 'Wireless'
+            };
+        }
+
+        // Full render: used on the first load and when switching maps
+        function renderTopology(topology) {
+            prepareTopology(topology);
+            const nodes = new vis.DataSet(topology.nodes.map(buildNodeItem));
+            const edges = new vis.DataSet(topology.links.map(buildEdgeItem));
+            const data = { nodes, edges };
+            const options = {
+                nodes: { borderWidth: 0 },
+                edges: { smooth: { type: 'continuous' } },
+                physics: { enabled: false },
+                interaction: { dragNodes: false, hover: true }
+            };
+
+            if (topologyNetwork) {
+                topologyNetwork.destroy();
+            }
+            topologyNodes = nodes;
+            topologyEdges = edges;
+            topologyNetwork = new vis.Network(container, data, options);
+            topologyNetwork.on('click', function (event) {
+                if (!event.nodes.length) {
+                    selectedNodeId = null;
+                    infoBox.style.display = 'none';
+                    return;
+                }
+
+                selectedNodeId = event.nodes[0];
+                const node = topologyNodes.get(selectedNodeId).data;
+                infoBox.textContent = `${node.label} | ${node.device_type} | ${node.visual_state}`;
+                infoBox.style.display = 'block';
+            });
+        }
+
+        // In-place refresh: used after showing cached data, so the view does not reset
+        function refreshTopology(topology) {
+            if (!topologyNodes || !topologyEdges) {
+                renderTopology(topology);
+                return;
+            }
+
+            prepareTopology(topology);
+            const nodeItems = topology.nodes.map(buildNodeItem);
+            const edgeItems = topology.links.map(buildEdgeItem);
+
+            const nodeIds = new Set(nodeItems.map(item => item.id));
+            const removedNodes = topologyNodes.getIds().filter(id => !nodeIds.has(id));
+            if (removedNodes.length) topologyNodes.remove(removedNodes);
+            topologyNodes.update(nodeItems); // adds items that do not exist yet
+
+            const edgeIds = new Set(edgeItems.map(item => item.id));
+            const removedEdges = topologyEdges.getIds().filter(id => !edgeIds.has(id));
+            if (removedEdges.length) topologyEdges.remove(removedEdges);
+            topologyEdges.update(edgeItems);
+
+            if (selectedNodeId) {
+                const selected = topologyNodes.get(selectedNodeId);
+                if (selected) {
+                    infoBox.textContent = `${selected.data.label} | ${selected.data.device_type} | ${selected.data.visual_state}`;
+                } else {
+                    selectedNodeId = null;
+                    infoBox.style.display = 'none';
+                }
+            }
+        }
+
         function loadTopology(mapName) {
             if (!mapName) return;
 
+            const requestId = ++topologyRequestId;
             errorBox.style.display = 'none';
             infoBox.style.display = 'none';
+
+            // Switching to a map seen before: show its last known state instantly,
+            // then refresh underneath. First visit: dim the canvas until data arrives.
+            const cached = topologyCache[mapName];
+            if (cached) {
+                renderTopology(cached);
+            } else {
+                container.style.opacity = '0.5';
+            }
+
             frappe.call({
                 method: 'network.network.page.network_topology.network_topology.get_public_map_topology',
                 args: { map_name: mapName },
                 callback(response) {
+                    if (requestId !== topologyRequestId) return; // user switched maps again
+                    container.style.opacity = '1';
                     if (!response.message) {
-                        showError('Unable to load this topology map.');
+                        if (!cached) showError('Unable to load this topology map.');
                         return;
                     }
 
-                    const topology = response.message;
-                    nodeStates = {};
-                    topology.nodes.forEach(node => {
-                        nodeStates[node.id] = node.visual_state;
-                    });
-                    const nodes = new vis.DataSet(topology.nodes.map(node => ({
-                        id: node.id,
-                        label: node.label,
-                        x: node.x,
-                        y: node.y,
-                        shape: 'image',
-                        image: buildDeviceSvgDataUri(node, node.visual_state),
-                        size: 30,
-                        font: { color: '#e5e7eb', size: 12, face: 'Arial' },
-                        data: node
-                    })));
-                    const edges = new vis.DataSet(topology.links.map(link => ({
-                        id: link.id,
-                        from: link.source_device,
-                        to: link.target_device,
-                        color: { color: getEdgeColor(link.source_device, link.target_device) },
-                        width: 2,
-                        dashes: link.connection_type === 'Wireless'
-                    })));
-                    const data = { nodes, edges };
-                    const options = {
-                        nodes: { borderWidth: 0 },
-                        edges: { smooth: { type: 'continuous' } },
-                        physics: { enabled: false },
-                        interaction: { dragNodes: false, hover: true }
-                    };
-
-                    if (topologyNetwork) {
-                        topologyNetwork.destroy();
+                    topologyCache[mapName] = response.message;
+                    if (cached) {
+                        refreshTopology(response.message);
+                    } else {
+                        renderTopology(response.message);
                     }
-                    topologyNodes = nodes;
-                    topologyEdges = edges;
-                    topologyNetwork = new vis.Network(container, data, options);
-                    topologyNetwork.on('click', function (event) {
-                        if (!event.nodes.length) {
-                            selectedNodeId = null;
-                            infoBox.style.display = 'none';
-                            return;
-                        }
-
-                        selectedNodeId = event.nodes[0];
-                        const node = nodes.get(selectedNodeId).data;
-                        infoBox.textContent = `${node.label} | ${node.device_type} | ${node.visual_state}`;
-                        infoBox.style.display = 'block';
-                    });
                 },
                 error() {
-                    showError('Unable to load this topology map.');
+                    if (requestId !== topologyRequestId) return;
+                    container.style.opacity = '1';
+                    if (!cached) showError('Unable to load this topology map.');
                 }
             });
         }

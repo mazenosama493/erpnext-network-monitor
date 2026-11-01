@@ -7,6 +7,7 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from network.api.downtime import close_open_downtimes
 from network.api.unknown import set_status_unknown
+from network.api.downtime import sync_device_ip
 
 class NetworkDevice(Document):
 

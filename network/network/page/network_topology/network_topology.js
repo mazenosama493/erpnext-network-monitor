@@ -55,6 +55,8 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
     let nodesDataSet = null;
     let edgesDataSet = null;
     let topologyRequestId = 0;
+    const topologyCache = {}; // map name -> last server response (shown instantly on switch)
+    const svgCache = {};      // device type + state -> generated SVG data URI
 
     // --- 1. DEFINE ALL HELPER & DIALOG FUNCTIONS FIRST ---
 
@@ -110,6 +112,14 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
     }
 
     function buildDeviceSvgDataUri(deviceType, visualState, typeIcon, topologyIcon) {
+        const key = [deviceType, visualState, typeIcon || '', topologyIcon ? topologyIcon.length : 0].join('|');
+        if (!svgCache[key]) {
+            svgCache[key] = buildDeviceSvgDataUriUncached(deviceType, visualState, typeIcon, topologyIcon);
+        }
+        return svgCache[key];
+    }
+
+    function buildDeviceSvgDataUriUncached(deviceType, visualState, typeIcon, topologyIcon) {
         let badgeColor = '#6b7280';
         let badgeSymbol = '?';
 
@@ -206,54 +216,75 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
 
     function loadMapTopology(mapName, preserveViewport) {
         const requestId = ++topologyRequestId;
+        const $canvas = $('#vis-canvas');
+
+        // Switching maps: show the last known state instantly, then refresh underneath.
+        // Edits (preserveViewport = true) always wait for fresh data.
+        const cachedPayload = !preserveViewport ? topologyCache[mapName] : null;
+        if (cachedPayload) {
+            applyTopology(cachedPayload, false);
+        } else {
+            $canvas.css('opacity', 0.5); // nothing to show yet: dim until the data arrives
+        }
+
         frappe.call({
             method: 'network.network.page.network_topology.network_topology.get_map_topology',
             args: { map_name: mapName },
             callback: (r) => {
                 if (requestId !== topologyRequestId || mapName !== currentMapName) return;
+                $canvas.css('opacity', 1);
                 if (!r.message) return;
-                const { nodes, links, available_devices, icons } = r.message;
-                nodeStateMap = {};
-                availableDevicesList = available_devices;
-
-                const visNodes = [];
-                const currentPositions = preserveViewport && network ? network.getPositions() : {};
-                nodes.forEach(n => {
-                    if (icons) n.topology_icon = icons[n.device_type] || '';
-                    nodeStateMap[n.id] = n.visual_state;
-                    
-                    let existingNode = preserveViewport && nodesDataSet ? nodesDataSet.get(n.id) : null;
-                    let currentPosition = currentPositions[n.id];
-                    let posX = currentPosition ? currentPosition.x : (existingNode ? existingNode.x : n.x);
-                    let posY = currentPosition ? currentPosition.y : (existingNode ? existingNode.y : n.y);
-
-                    visNodes.push({
-                        id: n.id,
-                        label: n.label,
-                        x: posX,
-                        y: posY,
-                        shape: 'image',
-                        image: buildDeviceSvgDataUri(n.device_type, n.visual_state, n.type_icon, n.topology_icon),
-                        font: { color: '#e5e7eb', size: 12, face: 'Arial', vadjust: 6 },
-                        data: n
-                    });
-                });
-
-                const visEdges = [];
-                links.forEach(l => {
-                    visEdges.push({
-                        id: l.id,
-                        from: l.source_device,
-                        to: l.target_device,
-                        color: { color: computeEdgeColor(l.source_device, l.target_device) },
-                        width: 2,
-                        dashes: l.connection_type === 'Wireless'
-                    });
-                });
-
-                renderGraph(visNodes, visEdges, preserveViewport);
+                topologyCache[mapName] = r.message;
+                // After showing cached data, refresh in place without moving the view
+                applyTopology(r.message, cachedPayload ? true : preserveViewport);
+            },
+            error: () => {
+                if (requestId === topologyRequestId) $canvas.css('opacity', 1);
             }
         });
+    }
+
+    function applyTopology(payload, preserveViewport) {
+        const { nodes, links, available_devices, icons } = payload;
+        nodeStateMap = {};
+        availableDevicesList = available_devices;
+
+        const visNodes = [];
+        const currentPositions = preserveViewport && network ? network.getPositions() : {};
+        nodes.forEach(n => {
+            if (icons) n.topology_icon = icons[n.device_type] || '';
+            nodeStateMap[n.id] = n.visual_state;
+            
+            let existingNode = preserveViewport && nodesDataSet ? nodesDataSet.get(n.id) : null;
+            let currentPosition = currentPositions[n.id];
+            let posX = currentPosition ? currentPosition.x : (existingNode ? existingNode.x : n.x);
+            let posY = currentPosition ? currentPosition.y : (existingNode ? existingNode.y : n.y);
+
+            visNodes.push({
+                id: n.id,
+                label: n.label,
+                x: posX,
+                y: posY,
+                shape: 'image',
+                image: buildDeviceSvgDataUri(n.device_type, n.visual_state, n.type_icon, n.topology_icon),
+                font: { color: '#e5e7eb', size: 12, face: 'Arial', vadjust: 6 },
+                data: n
+            });
+        });
+
+        const visEdges = [];
+        links.forEach(l => {
+            visEdges.push({
+                id: l.id,
+                from: l.source_device,
+                to: l.target_device,
+                color: { color: computeEdgeColor(l.source_device, l.target_device) },
+                width: 2,
+                dashes: l.connection_type === 'Wireless'
+            });
+        });
+
+        renderGraph(visNodes, visEdges, preserveViewport);
     }
 
     function renderGraph(visNodes, visEdges, preserveViewport) {

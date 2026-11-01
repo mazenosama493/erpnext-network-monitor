@@ -285,8 +285,6 @@ def get_public_map_topology(map_name):
             "label": node["label"],
             "device_type": node["device_type"],
             "type_icon": node["type_icon"],
-            # keeps the public response shape unchanged for the public page JS
-            "topology_icon": icons.get(node["device_type"], ""),
             "visual_state": visual_state,
             "x": node["x"],
             "y": node["y"],
@@ -295,6 +293,7 @@ def get_public_map_topology(map_name):
     return {
         "map_name": map_name_label,
         "nodes": public_nodes,
+        "icons": icons,  # one icon per device type, attached to nodes by the page
         "links": [
             {
                 "id": f"link-{index}",
