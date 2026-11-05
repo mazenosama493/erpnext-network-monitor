@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import base64
 import hashlib
@@ -14,6 +15,11 @@ ICON_CACHE = "network_topology_icons"   # permanent, keyed by icon file URL
 CACHE_PREFIX = "network_topology:"      # short TTL, cleared on every edit
 CACHE_TTL = 10                          # seconds, map topology
 PUBLIC_STATUS_TTL = 5                   # seconds, guest status polling
+MAX_TEXT_LENGTH = 500                   # characters, one free-floating map text
+DEFAULT_TEXT_SIZE = 16                  # px, map text size
+MIN_TEXT_SIZE = 8
+MAX_TEXT_SIZE = 72
+DEFAULT_TEXT_COLOR = "#e5e7eb"          # map text colour (light grey, matches the dark map)
 
 
 def _cache():
@@ -226,6 +232,20 @@ def _build_map_topology(map_name):
                 "target_port": row.target_port or ""
             })
 
+    # Free-floating text labels placed on the map (not tied to any device).
+    # getattr() keeps the map loading even before the "texts" table exists.
+    texts = [
+        {
+            "id": row.name,
+            "text": row.text or "",
+            "x": float(row.map_x or 0),
+            "y": float(row.map_y or 0),
+            "size": _clean_text_size(getattr(row, "font_size", None)),
+            "color": _clean_text_color(getattr(row, "text_color", None)),
+        }
+        for row in (getattr(map_doc, "texts", []) or [])
+    ]
+
     available_devices = [
         {"name": d.name, "device_name": d.device_name, "ip_address": d.ip_address, "device_type": d.device_type}
         for d in all_devices if d.name not in valid_node_ids
@@ -235,6 +255,7 @@ def _build_map_topology(map_name):
         "map_name": map_doc.name,
         "nodes": nodes,
         "links": links,
+        "texts": texts,
         "available_devices": available_devices,
         "icons": icons,
     }
@@ -277,7 +298,7 @@ def get_public_map_topology(map_name):
     for node in topology["nodes"]:
         visual_state = node["status"] or "Unknown"
         if visual_state == "Online" and (
-            node["packet_loss"] > 0 or node["response_time"] > 150
+            node["packet_loss"] > 0 or node["response_time"] > 200
         ):
             visual_state = "Warning"
         public_nodes.append({
@@ -293,6 +314,17 @@ def get_public_map_topology(map_name):
     return {
         "map_name": map_name_label,
         "nodes": public_nodes,
+        "texts": [
+            {
+                "id": f"text-{index}",
+                "text": text["text"],
+                "x": text["x"],
+                "y": text["y"],
+                "size": _clean_text_size(text.get("size")),
+                "color": _clean_text_color(text.get("color")),
+            }
+            for index, text in enumerate(topology.get("texts") or [])
+        ],
         "icons": icons,  # one icon per device type, attached to nodes by the page
         "links": [
             {
@@ -346,7 +378,7 @@ def _build_public_map_statuses(map_name):
         response_time = float(device.response_time or check.get("avg_response_time") or 0)
         packet_loss = float(check.get("packet_loss") or 0)
         visual_state = device.status or "Unknown"
-        if visual_state == "Online" and (packet_loss > 0 or response_time > 150):
+        if visual_state == "Online" and (packet_loss > 0 or response_time > 200):
             visual_state = "Warning"
 
         statuses.append({
@@ -374,9 +406,11 @@ def get_public_map_statuses(map_name):
 # --------------------------------------------------
 
 @frappe.whitelist()
-def save_map_positions(map_name, positions):
+def save_map_positions(map_name, positions, text_positions=None):
     if isinstance(positions, str):
         positions = json.loads(positions)
+    if isinstance(text_positions, str):
+        text_positions = json.loads(text_positions)
 
     pos_map = {p["id"]: p for p in positions}
     map_doc = frappe.get_doc("Network Map", map_name)
@@ -386,6 +420,13 @@ def save_map_positions(map_name, positions):
         if row.device in pos_map:
             row.map_x = float(pos_map[row.device]["x"])
             row.map_y = float(pos_map[row.device]["y"])
+
+    if text_positions:
+        text_pos_map = {p["id"]: p for p in text_positions}
+        for row in (getattr(map_doc, "texts", []) or []):
+            if row.name in text_pos_map:
+                row.map_x = float(text_pos_map[row.name]["x"])
+                row.map_y = float(text_pos_map[row.name]["y"])
 
     map_doc.save()
     clear_topology_cache()
@@ -489,6 +530,139 @@ def remove_link_from_map(map_name, link_id):
     frappe.db.commit()
     clear_topology_cache()
     return {"status": "deleted"}
+
+
+# --------------------------------------------------
+# Map text labels (add / edit / delete clear the cache; moves go through save_map_positions)
+# --------------------------------------------------
+
+def _clean_map_text(text):
+    text = (text or "").strip()
+    if not text:
+        frappe.throw("Text cannot be empty.")
+    if len(text) > MAX_TEXT_LENGTH:
+        frappe.throw(f"Text is too long (maximum {MAX_TEXT_LENGTH} characters).")
+    return text
+
+
+def _clean_text_size(size):
+    """Clamp a text size to the allowed range; anything missing or invalid becomes the default."""
+    try:
+        size = int(float(size))
+    except (TypeError, ValueError):
+        return DEFAULT_TEXT_SIZE
+    if size <= 0:
+        return DEFAULT_TEXT_SIZE
+    return max(MIN_TEXT_SIZE, min(MAX_TEXT_SIZE, size))
+
+
+def _clean_text_color(color):
+    """Only hex colours (#RGB, #RGBA, #RRGGBB, #RRGGBBAA) are accepted, because the value is
+    drawn on the public page. Anything missing or invalid becomes the default colour."""
+    if isinstance(color, str):
+        color = color.strip()
+        if re.fullmatch(r"#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})", color):
+            return color.lower()
+    return DEFAULT_TEXT_COLOR
+
+
+def _text_doctype_has_field(fieldname):
+    return frappe.get_meta("Network Map Text").has_field(fieldname)
+
+
+def _checked_text_size(font_size):
+    """None means "leave the size alone". Otherwise returns the clamped size, or raises a clear
+    error when the Network Map Text doctype has no font_size field to store it in."""
+    if font_size is None:
+        return None
+    font_size = _clean_text_size(font_size)
+    if _text_doctype_has_field("font_size"):
+        return font_size
+    if font_size != DEFAULT_TEXT_SIZE:
+        frappe.throw(
+            "The Network Map Text doctype has no 'font_size' field yet. "
+            "Add the Font Size field first."
+        )
+    return None
+
+
+def _checked_text_color(text_color):
+    """Same idea as _checked_text_size, for the text_color field."""
+    if text_color is None:
+        return None
+    text_color = _clean_text_color(text_color)
+    if _text_doctype_has_field("text_color"):
+        return text_color
+    if text_color != DEFAULT_TEXT_COLOR:
+        frappe.throw(
+            "The Network Map Text doctype has no 'text_color' field yet. "
+            "Add the Text Color field first."
+        )
+    return None
+
+
+def _get_map_doc_with_texts(map_name):
+    map_doc = frappe.get_doc("Network Map", map_name)
+    if not map_doc.meta.has_field("texts"):
+        frappe.throw(
+            "The Network Map doctype has no 'texts' table yet. "
+            "Add the Network Map Text child table first."
+        )
+    return map_doc
+
+
+def _find_map_text_row(map_doc, text_id):
+    for row in map_doc.texts:
+        if row.name == text_id:
+            return row
+    frappe.throw("This text no longer exists on the map.", frappe.DoesNotExistError)
+
+
+@frappe.whitelist()
+def add_text_to_map(map_name, text, map_x=250, map_y=200, font_size=None, text_color=None):
+    text = _clean_map_text(text)
+    font_size = _checked_text_size(font_size)
+    text_color = _checked_text_color(text_color)
+    map_doc = _get_map_doc_with_texts(map_name)
+    row = {
+        "text": text,
+        "map_x": float(map_x),
+        "map_y": float(map_y)
+    }
+    if font_size is not None:
+        row["font_size"] = font_size
+    if text_color is not None:
+        row["text_color"] = text_color
+    map_doc.append("texts", row)
+    map_doc.save()
+    clear_topology_cache()
+    return {"status": "added"}
+
+
+@frappe.whitelist()
+def update_map_text(map_name, text_id, text, font_size=None, text_color=None):
+    text = _clean_map_text(text)
+    font_size = _checked_text_size(font_size)
+    text_color = _checked_text_color(text_color)
+    map_doc = _get_map_doc_with_texts(map_name)
+    row = _find_map_text_row(map_doc, text_id)
+    row.text = text
+    if font_size is not None:
+        row.font_size = font_size
+    if text_color is not None:
+        row.text_color = text_color
+    map_doc.save()
+    clear_topology_cache()
+    return {"status": "updated"}
+
+
+@frappe.whitelist()
+def remove_text_from_map(map_name, text_id):
+    map_doc = _get_map_doc_with_texts(map_name)
+    map_doc.remove(_find_map_text_row(map_doc, text_id))
+    map_doc.save()
+    clear_topology_cache()
+    return {"status": "removed"}
 
 
 def broadcast_device_status_change(device_name, new_status, response_time, packet_loss):

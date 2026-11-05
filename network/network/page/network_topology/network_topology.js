@@ -111,6 +111,107 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
         d.show();
     }
 
+    // --- Free-floating text labels ---
+    // Drawn as vis-network "text" nodes in the same DataSet as the devices, so they pan, zoom
+    // and drag exactly like devices. The prefix keeps their ids apart from device names.
+
+    const TEXT_PREFIX = 'text::';
+    const DEFAULT_TEXT_SIZE = 16;
+    const MIN_TEXT_SIZE = 8;
+    const MAX_TEXT_SIZE = 72;
+    const DEFAULT_TEXT_COLOR = '#e5e7eb';
+    const TOPOLOGY_API = 'network.network.page.network_topology.network_topology.';
+
+    function isTextNodeId(id) {
+        return typeof id === 'string' && id.indexOf(TEXT_PREFIX) === 0;
+    }
+
+    function textRowName(nodeId) {
+        return nodeId.slice(TEXT_PREFIX.length);
+    }
+
+    // Only hex colours are used; anything else falls back to the default (same rule as the server)
+    function cleanTextColor(color) {
+        const c = (typeof color === 'string' ? color : '').trim();
+        return /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(c) ? c.toLowerCase() : DEFAULT_TEXT_COLOR;
+    }
+
+    function buildTextNode(t, x, y) {
+        const size = t.size || DEFAULT_TEXT_SIZE;
+        const color = cleanTextColor(t.color);
+        return {
+            id: TEXT_PREFIX + t.id,
+            label: t.text,
+            x: x,
+            y: y,
+            shape: 'text',
+            font: { color: color, size: size, face: 'Arial' },
+            // Blue outline on hover/selection so the picked text is obvious whatever its colour is
+            chosen: { label: (values) => { values.strokeWidth = 3; values.strokeColor = '#60a5fa'; } },
+            data: { kind: 'text', id: t.id, text: t.text, size: size, color: color }
+        };
+    }
+
+    // existing = the text node's data when editing, nothing when adding
+    function openTextDialog(existing) {
+        const mapName = currentMapName;
+        if (!mapName) return;
+        const isEdit = !!existing;
+
+        const d = new frappe.ui.Dialog({
+            title: isEdit ? __('Edit Text') : __('Add Text'),
+            fields: [
+                { fieldname: 'text', label: __('Text'), fieldtype: 'Small Text', reqd: 1, default: isEdit ? existing.text : '' },
+                {
+                    fieldname: 'font_size', label: __('Text Size (px)'), fieldtype: 'Int', reqd: 1,
+                    default: isEdit ? (existing.size || DEFAULT_TEXT_SIZE) : DEFAULT_TEXT_SIZE,
+                    description: __('Between {0} and {1}. Default is {2}.', [MIN_TEXT_SIZE, MAX_TEXT_SIZE, DEFAULT_TEXT_SIZE])
+                },
+                {
+                    fieldname: 'text_color', label: __('Text Color'), fieldtype: 'Color',
+                    default: isEdit ? cleanTextColor(existing.color) : DEFAULT_TEXT_COLOR
+                }
+            ],
+            primary_action_label: isEdit ? __('Save') : __('Add to Map'),
+            primary_action(values) {
+                const text = (values.text || '').trim();
+                if (!text) return;
+
+                const requestedSize = parseInt(values.font_size, 10) || DEFAULT_TEXT_SIZE;
+                const fontSize = Math.min(MAX_TEXT_SIZE, Math.max(MIN_TEXT_SIZE, requestedSize));
+                const args = { map_name: mapName, text: text, font_size: fontSize, text_color: cleanTextColor(values.text_color) };
+                if (isEdit) {
+                    args.text_id = existing.id;
+                } else {
+                    // New text appears in the middle of whatever part of the map is on screen
+                    const view = network ? network.getViewPosition() : { x: 250, y: 200 };
+                    args.map_x = view.x;
+                    args.map_y = view.y;
+                }
+
+                frappe.call({
+                    method: TOPOLOGY_API + (isEdit ? 'update_map_text' : 'add_text_to_map'),
+                    args: args,
+                    callback: () => {
+                        d.hide();
+                        if (currentMapName === mapName) loadMapTopology(mapName, true);
+                    }
+                });
+            }
+        });
+        d.show();
+    }
+
+    function editSelectedText() {
+        if (!network || !currentMapName) return;
+        const textId = network.getSelectedNodes().find(isTextNodeId);
+        if (!textId) {
+            frappe.msgprint(__('Please click a text label on the map first to select it.'));
+            return;
+        }
+        openTextDialog(nodesDataSet.get(textId).data);
+    }
+
     function buildDeviceSvgDataUri(deviceType, visualState, typeIcon, topologyIcon) {
         const key = [deviceType, visualState, typeIcon || '', topologyIcon ? topologyIcon.length : 0].join('|');
         if (!svgCache[key]) {
@@ -245,7 +346,7 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
     }
 
     function applyTopology(payload, preserveViewport) {
-        const { nodes, links, available_devices, icons } = payload;
+        const { nodes, links, available_devices, icons, texts } = payload;
         nodeStateMap = {};
         availableDevicesList = available_devices;
 
@@ -270,6 +371,18 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
                 font: { color: '#e5e7eb', size: 12, face: 'Arial', vadjust: 6 },
                 data: n
             });
+        });
+
+        // Text labels keep their dragged position across in-place refreshes, like devices do
+        (texts || []).forEach(t => {
+            const textNodeId = TEXT_PREFIX + t.id;
+            const existingText = preserveViewport && nodesDataSet ? nodesDataSet.get(textNodeId) : null;
+            const currentTextPosition = currentPositions[textNodeId];
+            visNodes.push(buildTextNode(
+                t,
+                currentTextPosition ? currentTextPosition.x : (existingText ? existingText.x : t.x),
+                currentTextPosition ? currentTextPosition.y : (existingText ? existingText.y : t.y)
+            ));
         });
 
         const visEdges = [];
@@ -357,8 +470,10 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
         if (!network) {
             network = new vis.Network(container, data, options);
             network.on('click', function(params) {
-                if (params.nodes.length > 0) {
-                    const nodeId = params.nodes[0];
+                // Text labels have no device info, so only device nodes open the info box
+                const deviceNodeId = params.nodes.find(id => !isTextNodeId(id));
+                if (deviceNodeId !== undefined) {
+                    const nodeId = deviceNodeId;
                     const nodeObj = nodesDataSet.get(nodeId);
                     const d = nodeObj.data;
                     const $box =$('#node-info-box');
@@ -374,6 +489,10 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
                 } else {
                     $('#node-info-box').fadeOut(150);
                 }
+            });
+            network.on('doubleClick', function(params) {
+                const textId = params.nodes.find(isTextNodeId);
+                if (textId) openTextDialog(nodesDataSet.get(textId).data);
             });
         }
     }
@@ -393,27 +512,46 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
         if (!network || !currentMapName) return;
         const mapName = currentMapName;
         const positions = network.getPositions();
-        const posArray = Object.keys(positions).map(id => ({
-            id: id,
-            x: positions[id].x,
-            y: positions[id].y
-        }));
+        const posArray = [];
+        const textPosArray = [];
+        Object.keys(positions).forEach(id => {
+            const p = { x: positions[id].x, y: positions[id].y };
+            if (isTextNodeId(id)) {
+                textPosArray.push(Object.assign({ id: textRowName(id) }, p));
+            } else {
+                posArray.push(Object.assign({ id: id }, p));
+            }
+        });
         frappe.call({
             method: 'network.network.page.network_topology.network_topology.save_map_positions',
-            args: { map_name: mapName, positions: posArray },
+            args: { map_name: mapName, positions: posArray, text_positions: textPosArray },
             callback: () => frappe.show_alert({ message: __('Node coordinates saved successfully'), indicator: 'green' })
         });
     });
 
     page.add_inner_button(__('Add Device'), () => openAddDeviceDialog());
     page.add_inner_button(__('Connect Devices'), () => openAddLinkDialog());
+    page.add_inner_button(__('Add Text'), () => openTextDialog());
+    page.add_inner_button(__('Edit Text'), () => editSelectedText());
 
     page.add_inner_button(__('Delete Selection'), () => {
         if (!network || !currentMapName) return;
         const selectedNodes = network.getSelectedNodes();
         const selectedEdges = network.getSelectedEdges();
 
-        if (selectedNodes.length) {
+        if (selectedNodes.length && isTextNodeId(selectedNodes[0])) {
+            const mapName = currentMapName;
+            const textId = textRowName(selectedNodes[0]);
+            frappe.confirm(__('Delete this text label?'), () => {
+                frappe.call({
+                    method: TOPOLOGY_API + 'remove_text_from_map',
+                    args: { map_name: mapName, text_id: textId },
+                    callback: () => {
+                        if (currentMapName === mapName) loadMapTopology(mapName, true);
+                    }
+                });
+            });
+        } else if (selectedNodes.length) {
             const mapName = currentMapName;
             const deviceId = selectedNodes[0];
             frappe.confirm(__('Remove device {0} from this map?', [deviceId]), () => {
@@ -438,7 +576,7 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
                 });
             });
         } else {
-            frappe.msgprint(__('Please click a device node or connection line on the map first to select it.'));
+            frappe.msgprint(__('Please click a device, connection line or text label on the map first to select it.'));
         }
     });
 
@@ -518,7 +656,7 @@ frappe.pages['network-topology'].on_page_load = function(wrapper) {
         if (!node) return;
 
         let visualState = data.status || "Unknown";
-        if (data.status === "Online" && (data.packet_loss > 0 || data.response_time > 150)) {
+        if (data.status === "Online" && (data.packet_loss > 0 || data.response_time > 200)) {
             visualState = "Warning";
         }
 

@@ -304,7 +304,7 @@
             if (!topologyNodes || !topologyNodes.get(update.node_id)) return;
 
             let visualState = update.status || 'Unknown';
-            if (visualState === 'Online' && (update.packet_loss > 0 || update.response_time > 150)) {
+            if (visualState === 'Online' && (update.packet_loss > 0 || update.response_time > 200)) {
                 visualState = 'Warning';
             }
             const node = topologyNodes.get(update.node_id);
@@ -352,6 +352,28 @@
             };
         }
 
+        // Text labels from the editor. Their ids ("text-0", "text-1", ...) cannot clash with
+        // device ids, which are SHA-256 hex strings.
+        function isTextId(id) {
+            return typeof id === 'string' && id.indexOf('text-') === 0;
+        }
+
+        function buildTextItem(text) {
+            return {
+                id: text.id,
+                label: text.text,
+                x: text.x,
+                y: text.y,
+                shape: 'text',
+                font: { color: text.color || '#e5e7eb', size: text.size || 16, face: 'Arial' },
+                chosen: false // read-only: no hover/selection styling
+            };
+        }
+
+        function buildNodeItems(topology) {
+            return topology.nodes.map(buildNodeItem).concat((topology.texts || []).map(buildTextItem));
+        }
+
         function buildEdgeItem(link) {
             return {
                 id: link.id,
@@ -366,7 +388,7 @@
         // Full render: used on the first load and when switching maps
         function renderTopology(topology) {
             prepareTopology(topology);
-            const nodes = new vis.DataSet(topology.nodes.map(buildNodeItem));
+            const nodes = new vis.DataSet(buildNodeItems(topology));
             const edges = new vis.DataSet(topology.links.map(buildEdgeItem));
             const data = { nodes, edges };
             const options = {
@@ -383,13 +405,16 @@
             topologyEdges = edges;
             topologyNetwork = new vis.Network(container, data, options);
             topologyNetwork.on('click', function (event) {
-                if (!event.nodes.length) {
+                const deviceId = event.nodes.find(id => !isTextId(id));
+                if (deviceId === undefined) {
+                    // Empty space, or a text label (labels have no info box)
+                    if (event.nodes.length) topologyNetwork.unselectAll();
                     selectedNodeId = null;
                     infoBox.style.display = 'none';
                     return;
                 }
 
-                selectedNodeId = event.nodes[0];
+                selectedNodeId = deviceId;
                 const node = topologyNodes.get(selectedNodeId).data;
                 infoBox.textContent = `${node.label} | ${node.device_type} | ${node.visual_state}`;
                 infoBox.style.display = 'block';
@@ -404,7 +429,7 @@
             }
 
             prepareTopology(topology);
-            const nodeItems = topology.nodes.map(buildNodeItem);
+            const nodeItems = buildNodeItems(topology);
             const edgeItems = topology.links.map(buildEdgeItem);
 
             const nodeIds = new Set(nodeItems.map(item => item.id));
